@@ -39,10 +39,9 @@ class VIDTIMITDataset(Dataset):
         return len(self.paths)
     
     def __getitem__(self, index):
-        audio_path, class_text = self.paths_tuple[lambda x: x[index][0]]
-        audios = data.load_and_transform_audio_data([audio_path], self.device, to_tensor=False)
-
-        video_path, class_text = self.paths_tuple[lambda x: x[index][1]]
+        audio_path, video_path = self.paths_tuple[index]
+        
+        audios = data.load_and_transform_audio_data([audio_path], self.device, to_tensor = False)
         videos = data.load_and_transform_video_data([video_path], self.device, to_tensor = False)
 
         if self.transform is not None:
