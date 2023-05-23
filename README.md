@@ -1,2 +1,2 @@
-# ml-research-projects
-Repository containing ML research projects
+# ml-projects
+Repository containing ML projects.
