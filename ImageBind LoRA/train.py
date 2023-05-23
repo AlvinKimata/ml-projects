@@ -195,7 +195,7 @@ def parse_args():
     parser.add_argument("--device", type=str, default="cpu", help="Device to use for training ('cpu' or 'cuda')")
     parser.add_argument("--datasets_dir", type=str, default="./.datasets",
                         help="Directory containing the datasets")
-    parser.add_argument("--datasets", type=str, nargs="+", default=["dreambooth"], choices=["dreambooth"],
+    parser.add_argument("--datasets", type=str, nargs="+", default=["dreambooth"], choices=["dreambooth", "vidtimit"],
                         help="Datasets to use for training and validation")
     parser.add_argument("--full_model_checkpoint_dir", type=str, default="./.checkpoints/full",
                         help="Directory to save the full model checkpoints")
@@ -314,6 +314,17 @@ if __name__ == "__main__":
                                                  n_views=2 if args.self_contrast else 1)))
         test_datasets.append(DreamBoothDataset(
             root_dir=os.path.join(args.datasets_dir, "dreambooth", "dataset"), split="test",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+
+    elif "vidtimit" in args.datasets:
+        from datasets.vidtimit import VIDTIMITDataset
+        train_datasets.append(VIDTIMITDataset(
+            root_dir=os.path.join(args.datasets_dir, "vidtimit"), split="train",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+        test_datasets.append(VIDTIMITDataset(
+            root_dir=os.path.join(args.datasets_dir, "vidtimit"), split="test",
             transform=ContrastiveTransformations(contrast_transforms,
                                                  n_views=2 if args.self_contrast else 1)))
 
