@@ -15,18 +15,27 @@ class VIDTIMITDataset(Dataset):
         self.classes = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
         self.class_to_idx = {cls: idx for idx, cls in enumerate(self.classes)}
 
-        self.paths_tuple = []
+        self.paths = []
+        self.audio_paths = []
+        self.video_paths = []
+
         for cls in self.classes:
             cls_dir = os.path.join(root_dir, cls)
             cls_audio_dir = os.path.join(cls_dir, 'audio')
             cls_video_dir = os.path.join(cls_dir, 'videos')
-            cls_audio_files = [f for f in os.listdir(cls_audio_dir) if f.endswith('.wav')]
-            cls_video_files = [f.replace('.wav', '.avi') for f in cls_audio_files]
 
-            self.paths_tuple.extend(zip(cls_audio_files, cls_video_files))
+            for filename in os.listdir(cls_audio_dir):
+              if filename.endswith('.wav'):
+                self.audio_paths.append(os.path.join(cls_audio_dir, filename)), 
 
+            for filename in os.listdir(cls_video_dir):
+              if filename.endswith('.avi'):
+                self.video_paths.append(os.path.join(cls_video_dir, filename))
+        self.paths = list(zip(self.audio_paths, self.video_paths))
+
+          
         #Split dataset.
-        train_paths, test_paths = train_test_split(self.paths_tuple, train_size=train_size, random_state=random_seed)
+        train_paths, test_paths = train_test_split(self.paths, train_size=train_size, random_state=random_seed)
 
         if split == 'train':
             self.paths = train_paths
@@ -39,19 +48,22 @@ class VIDTIMITDataset(Dataset):
         return len(self.paths)
     
     def __getitem__(self, index):
-        audio_path, video_path = self.paths_tuple[index]
+        audio_path, video_path = self.paths[index]
         
-        audios = data.load_and_transform_audio_data([audio_path], self.device, to_tensor = False)
-        videos = data.load_and_transform_video_data([video_path], self.device, to_tensor = False)
+        audios = data.load_and_transform_audio_data([audio_path], self.device)
+        videos = data.load_and_transform_video_data([video_path], self.device)
 
-        if self.transform is not None:
-            video = videos[0]
-            transformed_videos = self.transform(video)
+        # if self.transform is not None:
+        #   video = videos[0]
+        #   videos = self.transform(videos)
 
-        if self.transform is not None:
-            audio = audios[0]
-            transformed_audios = self.transform(audio)
+        # if self.transform is not None:
+        #   audio = audios[0]
+        #   audios = self.transform(audios)
 
-        texts = data.load_and_transform_text([class_text], self.device)
 
-        return transformed_videos, ModalityType.VISION, transformed_audios, ModalityType.VISION, texts, ModalityType.TEXT
+        # return audios, ModalityType.AUDIO
+        return audios, ModalityType.AUDIO, videos,  ModalityType.VISION
+
+   
+
