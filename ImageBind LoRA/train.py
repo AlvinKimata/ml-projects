@@ -31,7 +31,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, ConcatDataset
 import torchvision
 from torchvision import transforms
-
+from torchaudio import transforms as audio_transforms
 from models import imagebind_model
 from models import lora as LoRA
 from models.imagebind_model import ModalityType, load_module, save_module
@@ -289,34 +289,22 @@ if __name__ == "__main__":
 
     contrast_transforms = transforms.Compose(
         [
+            transforms.ToPILImage(),
             transforms.RandomHorizontalFlip(),
-            transforms.RandomResizedCrop(size=224),
-            transforms.RandomApply([transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)],
-                                   p=0.8),
-            transforms.RandomGrayscale(p=0.2),
-            transforms.GaussianBlur(kernel_size=9),
+
+            # transforms.RandomResizedCrop(size=224),
+            # transforms.RandomApply([transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)],
+            #                        p=0.8),
+            # transforms.RandomGrayscale(p=0.2),
+            # transforms.GaussianBlur(kernel_size=9),
             transforms.ToTensor(),
-            transforms.Normalize(
-                mean=(0.48145466, 0.4578275, 0.40821073),
-                std=(0.26862954, 0.26130258, 0.27577711),
-            ),
+            # transforms.Normalize(
+            #     mean=(0.48145466, 0.4578275, 0.40821073),
+            #     std=(0.26862954, 0.26130258, 0.27577711),
+            # ),
         ]
     )
 
-    contrast_video_transforms = transforms.Compose(
-        [
-            transforms.RandomHorizontalFlip(),
-            transforms.RandomApply([transforms.ColorJitter(brightness=0.5, contrast=0.5, saturation=0.5, hue=0.1)],
-                                   p=0.8),
-            transforms.RandomGrayscale(p=0.2),
-            transforms.GaussianBlur(kernel_size=9),
-            transforms.ToTensor(),
-            transforms.Normalize(
-                mean=(0.48145466, 0.4578275, 0.40821073),
-                std=(0.26862954, 0.26130258, 0.27577711),
-            ),
-        ]
-    )
     train_datasets = []
     test_datasets = []
 
@@ -336,11 +324,11 @@ if __name__ == "__main__":
         from datasets.vidtimit import VIDTIMITDataset
         train_datasets.append(VIDTIMITDataset(
             root_dir=os.path.join(args.datasets_dir, "vidtimit"), split="train",
-            transform=ContrastiveTransformations(contrast_video_transforms,
+            transform=ContrastiveTransformations(contrast_transforms,
                                                  n_views=2 if args.self_contrast else 1)))
         test_datasets.append(VIDTIMITDataset(
             root_dir=os.path.join(args.datasets_dir, "vidtimit"), split="test",
-            transform=ContrastiveTransformations(contrast_video_transforms,
+            transform=ContrastiveTransformations(contrast_transforms,
                                                  n_views=2 if args.self_contrast else 1)))
 
     if len(args.datasets) == 1:
