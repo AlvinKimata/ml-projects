@@ -308,7 +308,7 @@ if __name__ == "__main__":
     train_datasets = []
     test_datasets = []
 
-    # Load datasets
+    # Load dreambooth
     if "dreambooth" in args.datasets:
         from datasets.dreambooth import DreamBoothDataset
         train_datasets.append(DreamBoothDataset(
@@ -320,6 +320,7 @@ if __name__ == "__main__":
             transform=ContrastiveTransformations(contrast_transforms,
                                                  n_views=2 if args.self_contrast else 1)))
 
+    #Load vidtimit dataset
     elif "vidtimit" in args.datasets:
         from datasets.vidtimit import VIDTIMITDataset
         train_datasets.append(VIDTIMITDataset(
@@ -328,6 +329,53 @@ if __name__ == "__main__":
                                                  n_views=2 if args.self_contrast else 1)))
         test_datasets.append(VIDTIMITDataset(
             root_dir=os.path.join(args.datasets_dir, "vidtimit"), split="test",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+    #Load  deepfaketimit dataset
+    elif "deepfaketimit" in args.datasets:
+        from datasets.deepfaketimit import DeepFakeDataset
+        train_datasets.append(DeepFakeDataset(
+            root_dir=os.path.join(args.datasets_dir, "deepfaketimit"), split="train",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+        test_datasets.append(DeepFakeDataset(
+            root_dir=os.path.join(args.datasets_dir, "deepfaketimit"), split="test",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+        
+    #Load asvspoof dataset.
+    elif "asvspoof" in args.datasets:
+        from datasets.asvspoof import AsvSpoofDataset
+        train_datasets.append(AsvSpoofDataset(
+            root_dir=os.path.join(args.datasets_dir, "asvspoof"), split="train",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+        test_datasets.append(AsvSpoofDataset(
+            root_dir=os.path.join(args.datasets_dir, "asvspoof"), split="test",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+        
+    #Load dfdc dataset.
+    elif "dfdc" in args.datasets:
+        from datasets.dfdc import DfdcDataset
+        train_datasets.append(DfdcDataset(
+            root_dir=os.path.join(args.datasets_dir, "dfdc"), split="train",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+        test_datasets.append(DfdcDataset(
+            root_dir=os.path.join(args.datasets_dir, "dfdc"), split="test",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+        
+     #Load celebdf dataset.
+    elif "celebdf" in args.datasets:
+        from datasets.celebdf import CelebdfDataset
+        train_datasets.append(CelebdfDataset(
+            root_dir=os.path.join(args.datasets_dir, "celebdf"), split="train",
+            transform=ContrastiveTransformations(contrast_transforms,
+                                                 n_views=2 if args.self_contrast else 1)))
+        test_datasets.append(CelebdfDataset(
+            root_dir=os.path.join(args.datasets_dir, "celebdf"), split="test",
             transform=ContrastiveTransformations(contrast_transforms,
                                                  n_views=2 if args.self_contrast else 1)))
 
