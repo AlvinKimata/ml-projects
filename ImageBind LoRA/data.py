@@ -132,8 +132,8 @@ def load_and_transform_audio_data(
     num_mel_bins=128,
     target_length=204,
     sample_rate=16000,
-    clip_duration=2,
-    clips_per_video=3,
+    clip_duration=4,
+    clips_per_video=6,
     mean=-4.268,
     std=9.138,
 ):
