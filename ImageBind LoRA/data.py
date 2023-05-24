@@ -19,7 +19,7 @@ from pytorchvideo.data.clip_sampling import ConstantClipsPerVideoSampler
 from pytorchvideo.data.encoded_video import EncodedVideo
 
 from torchvision import transforms
-from torchvision.transforms._transforms_video import NormalizeVideo
+from torchvision.transforms._transforms_video import NormalizeVideo, RandomHorizontalFlipVideo
 
 DEFAULT_AUDIO_FRAME_SHIFT_MS = 10  # in milliseconds
 
@@ -311,8 +311,8 @@ class SpatialCrop(nn.Module):
 def load_and_transform_video_data(
     video_paths,
     device,
-    clip_duration=2,
-    clips_per_video=5,
+    clip_duration=4,
+    clips_per_video=10,
     sample_rate=16000,
 ):
     if video_paths is None:
@@ -326,6 +326,7 @@ def load_and_transform_video_data(
                 mean=(0.48145466, 0.4578275, 0.40821073),
                 std=(0.26862954, 0.26130258, 0.27577711),
             ),
+            RandomHorizontalFlipVideo(p = 0.5)
         ]
     )
 
