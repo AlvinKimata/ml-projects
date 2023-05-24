@@ -132,8 +132,8 @@ def load_and_transform_audio_data(
     num_mel_bins=128,
     target_length=204,
     sample_rate=16000,
-    clip_duration=4,
-    clips_per_video=6,
+    clip_duration=2,
+    clips_per_video=3,
     mean=-4.268,
     std=9.138,
 ):
@@ -311,8 +311,8 @@ class SpatialCrop(nn.Module):
 def load_and_transform_video_data(
     video_paths,
     device,
-    clip_duration=4,
-    clips_per_video=10,
+    clip_duration=2,
+    clips_per_video=5,
     sample_rate=16000,
 ):
     if video_paths is None:
