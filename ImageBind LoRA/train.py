@@ -449,7 +449,7 @@ if __name__ == "__main__":
     else:
         checkpointing = {"enable_checkpointing": args.full_model_checkpointing,}
 
-    trainer = Trainer(accelerator="gpu" if "cuda" in device_name else "cpu",
+    trainer = Trainer(precision = 'bf16', accelerator="gpu" if "cuda" in device_name else "cpu",
                       devices=1 if ":" not in device_name else [int(device_name.split(":")[1])], deterministic=True,
                       max_epochs=args.max_epochs, gradient_clip_val=args.gradient_clip_val,
                       logger=loggers if loggers else None, **checkpointing)
