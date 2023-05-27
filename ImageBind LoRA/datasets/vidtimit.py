@@ -54,17 +54,4 @@ class VIDTIMITDataset(Dataset):
         videos = data.load_and_transform_video_data([video_path], self.device)
         # texts = data.load_and_transform_text([class_text], self.device)
 
-        # if self.transform is not None:
-        #   video = videos[0]
-        #   videos = self.transform(videos)
-
-        # if self.transform is not None:
-        #   audio = audios[0]
-        #   audios = self.transform(audios)
-
-
-        # return audios, ModalityType.AUDIO
         return audios, ModalityType.AUDIO, videos, ModalityType.VISION
-
-   
-

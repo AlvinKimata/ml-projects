@@ -393,6 +393,7 @@ if __name__ == "__main__":
         drop_last=True,
         pin_memory=False,
         num_workers=args.num_workers,
+        prefetch_factor = args.batch_size
     )
     val_loader = DataLoader(
         test_dataset,
@@ -401,6 +402,7 @@ if __name__ == "__main__":
         drop_last=False,
         pin_memory=False,
         num_workers=args.num_workers,
+        prefetch_factor = args.batch_size
     )
 
     # Visualize some examples
