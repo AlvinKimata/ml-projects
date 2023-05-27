@@ -324,11 +324,11 @@ if __name__ == "__main__":
     elif "vidtimit" in args.datasets:
         from datasets.vidtimit import VIDTIMITDataset
         train_datasets.append(VIDTIMITDataset(
-            root_dir=os.path.join(args.datasets_dir, "vidtimit"), split="train",
+            root_dir=os.path.join(args.datasets_dir, "VidTIMIT"), split="train",
             transform=ContrastiveTransformations(contrast_transforms,
                                                  n_views=2 if args.self_contrast else 1)))
         test_datasets.append(VIDTIMITDataset(
-            root_dir=os.path.join(args.datasets_dir, "vidtimit"), split="test",
+            root_dir=os.path.join(args.datasets_dir, "VidTIMIT"), split="test",
             transform=ContrastiveTransformations(contrast_transforms,
                                                  n_views=2 if args.self_contrast else 1)))
     #Load  deepfaketimit dataset
