@@ -16,21 +16,12 @@ class VIDTIMITDataset(Dataset):
         self.classes = [d for d in os.listdir(root_dir) if os.path.isdir(os.path.join(root_dir, d))]
         self.class_to_idx = {cls: idx for idx, cls in enumerate(self.classes)}
 
-        '''
-        self.paths = []
-        for cls in self.classes:
-            cls_dir = os.path.join(root_dir, cls)
-            for filename in os.listdir(cls_dir):
-                if filename.endswith('.jpg'):
-                    self.paths.append((os.path.join(cls_dir, filename), cls))
-        '''
         self.paths = []
         self.video_paths = []
 
         for cls in self.classes:
             cls_dir = os.path.join(root_dir, cls)
             cls_video_dir = path.list_files(cls_dir)
-
             
             for filename in cls_video_dir:
               filename = str(filename)
@@ -59,7 +50,7 @@ class VIDTIMITDataset(Dataset):
     
     def __getitem__(self, index):
         video_path, audio_path, cls = self.paths[index]
-        
+                
         audios = data.load_and_transform_audio_data([audio_path], self.device)
         videos = data.load_and_transform_video_data([video_path], self.device)
         text = data.load_and_transform_text([cls], self.device)
