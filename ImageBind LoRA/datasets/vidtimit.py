@@ -49,10 +49,10 @@ class VIDTIMITDataset(Dataset):
         return len(self.paths)
     
     def __getitem__(self, index):
-        video_path, audio_path, cls = self.paths[index]
-                
+        video_path, audio_path, data_class = self.paths[index]
+
         audios = data.load_and_transform_audio_data([audio_path], self.device)
         videos = data.load_and_transform_video_data([video_path], self.device)
-        text = data.load_and_transform_text([cls], self.device)
+        text = data.load_and_transform_text([data_class], self.device)
 
-        return audios, ModalityType.AUDIO, videos, ModalityType.VISION, text, ModalityType.TEXT
+        return videos, ModalityType.VISION, text, ModalityType.TEXT
