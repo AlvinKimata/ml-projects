@@ -21,7 +21,7 @@ class VIDTIMITDataset(Dataset):
 
         for cls in self.classes:
             cls_dir = os.path.join(root_dir, cls)
-            cls_video_dir = path.list_files(cls_dir)
+            cls_video_dir = sorted(path.list_files(cls_dir))
             
             for filename in cls_video_dir:
               filename = str(filename)
@@ -29,10 +29,12 @@ class VIDTIMITDataset(Dataset):
                 video_directory = filename
 
                 audio_id = filename.split(sep = '.')[0]
-                audio_path = audio_id + '.wav'
-                audio_file = os.path.split(audio_path)[-1]
-                audio_directory = os.path.join(root_dir, 'audio', audio_file)
+                audio_id_dir = os.path.split(video_directory)[0]
+                audio_dir_id = audio_id_dir.split(sep = '/')[-1]
 
+                audio_path =  audio_id + '.wav'
+                audio_file = os.path.split(audio_path)[-1]
+                audio_directory = os.path.join(root_dir, 'audio', audio_dir_id, audio_file)
                 self.paths.append((video_directory, audio_directory, cls))
           
         #Split dataset.
