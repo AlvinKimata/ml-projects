@@ -466,7 +466,6 @@ class AudioVisionExecutor(BaseExecutor):
 
     return metrics
 
-class VisionAudioExecutor(BaseExecutor)
 def get_executor(params):
   """Returns an instance of the Executor depending on the setting."""
 
@@ -476,8 +475,12 @@ def get_executor(params):
     input_params = params['eval']['input']
 
   is_aud_cls = input_params.name in dataloaders.AUD_CLS_DS
-  # if is_aud_cls:
-  #   return AudioExecutor(params=params)
-  # else:
-  #   return VisionExecutor(params=params)
+  is_vid_cls = input_params.name in dataloaders.VID_CLS_DS
+  is_aud_vid_cls = input_params.name in dataloaders.AUD_VID_CLS_DS
+  if is_aud_cls:
+    return AudioExecutor(params=params)
+  elif is_vid_cls:
+    return VisionExecutor(params=params)
+  else:
+    return AudioVisionExecutor(params = params)
 
