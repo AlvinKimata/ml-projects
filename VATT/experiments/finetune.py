@@ -7,8 +7,8 @@ import tensorflow as tf
 from data import dataloaders
 from data import processing
 from experiments import base
-# from models.backbones.audio import factory as aud_factory
-# from models.backbones.video import factory as vid_factory
+from models.audio import factory as aud_factory
+from models.video import factory as vid_factory
 from utils.eval import measures
 from utils.train import optimizers
 from utils.train import restore

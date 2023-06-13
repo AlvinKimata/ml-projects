@@ -10,7 +10,7 @@ from dmvr import sources
 from dmvr import video_dataset as dmvr_base
 import tensorflow as tf
 
-from vatt.data import processing
+from data import processing
 
 
 # ----------------------------------------------------------------------
