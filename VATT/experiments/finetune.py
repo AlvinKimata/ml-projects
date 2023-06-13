@@ -15,9 +15,9 @@ from utils.train import restore
 from utils.train import schedules
 
 
-# FeatureNames = dataloaders.FeatureNames
-# REF_FPS = dataloaders.REF_FPS  # reference fps used during training
-# REF_SR = dataloaders.REF_SR  # reference sampling rate used during training
+FeatureNames = dataloaders.FeatureNames
+REF_FPS = dataloaders.REF_FPS  # reference fps used during training
+REF_SR = dataloaders.REF_SR  # reference sampling rate used during training
 
 
 class BaseExecutor(base.Executor):
@@ -230,148 +230,254 @@ class BaseExecutor(base.Executor):
     return keras_model
 
 
-# class VisionExecutor(BaseExecutor):
-#   """Constructs the necessary modules to perform vision fine-tuning."""
+class VisionExecutor(BaseExecutor):
+  """Constructs the necessary modules to perform vision fine-tuning."""
 
-#   def prepare_train_inputs(self, inputs):
-#     """Prepares inputs on device to be fed to model in train mode."""
-#     params = self.params.train.input
+  def prepare_train_inputs(self, inputs):
+    """Prepares inputs on device to be fed to model in train mode."""
+    params = self.params.train.input
 
-#     images = inputs[FeatureNames.VISION]
-#     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
+    images = inputs[FeatureNames.VISION]
+    labels_onehot = inputs[FeatureNames.LABEL_INDEX]
 
-#     if params.linearize_vision:
-#       img_shape = [params.frame_size, params.frame_size, 3]
-#       if params.name in dataloaders.VID_CLS_DS:
-#         space_to_depth = params.space_to_depth
-#         img_shape = processing.get_video_shape(
-#             params, is_space_to_depth=space_to_depth)
-#       else:
-#         img_shape = [1] + img_shape
+    if params.linearize_vision:
+      img_shape = [params.frame_size, params.frame_size, 3]
+      if params.name in dataloaders.VID_CLS_DS:
+        space_to_depth = params.space_to_depth
+        img_shape = processing.get_video_shape(
+            params, is_space_to_depth=space_to_depth)
+      else:
+        img_shape = [1] + img_shape
 
-#       img_shape = [-1] + img_shape
-#       images = tf.reshape(images, img_shape)
+      img_shape = [-1] + img_shape
+      images = tf.reshape(images, img_shape)
 
-#     if params.name in dataloaders.IMG_CLS_DS:
-#       num_replica = self.params.model_config.temporal_patch_size
-#       images = tf.tile(images, [1, num_replica, 1, 1, 1])
+    if params.name in dataloaders.IMG_CLS_DS:
+      num_replica = self.params.model_config.temporal_patch_size
+      images = tf.tile(images, [1, num_replica, 1, 1, 1])
 
-#     labels = {'one_hot': labels_onehot}
+    labels = {'one_hot': labels_onehot}
 
-#     inputs = {'images': images}
-#     return inputs, labels
+    inputs = {'images': images}
+    return inputs, labels
 
-#   def prepare_eval_inputs(self, inputs):
-#     """Prepares inputs on device to be fed to model in eval mode."""
-#     params = self.params.eval.input
-#     images = inputs[FeatureNames.VISION]
-#     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
+  def prepare_eval_inputs(self, inputs):
+    """Prepares inputs on device to be fed to model in eval mode."""
+    params = self.params.eval.input
+    images = inputs[FeatureNames.VISION]
+    labels_onehot = inputs[FeatureNames.LABEL_INDEX]
 
-#     if params.linearize_vision:
-#       img_shape = [params.frame_size, params.frame_size, 3]
-#       if params.name in dataloaders.VID_CLS_DS:
-#         space_to_depth = params.space_to_depth
-#         img_shape = processing.get_video_shape(
-#             params, is_space_to_depth=space_to_depth)
-#       else:
-#         img_shape = [1] + img_shape
+    if params.linearize_vision:
+      img_shape = [params.frame_size, params.frame_size, 3]
+      if params.name in dataloaders.VID_CLS_DS:
+        space_to_depth = params.space_to_depth
+        img_shape = processing.get_video_shape(
+            params, is_space_to_depth=space_to_depth)
+      else:
+        img_shape = [1] + img_shape
 
-#       img_shape = [-1] + img_shape
-#       images = tf.reshape(images, img_shape)
+      img_shape = [-1] + img_shape
+      images = tf.reshape(images, img_shape)
 
-#     if params.name in dataloaders.IMG_CLS_DS:
-#       num_replica = self.params.model_config.temporal_patch_size
-#       images = tf.tile(images, [1, num_replica, 1, 1, 1])
+    if params.name in dataloaders.IMG_CLS_DS:
+      num_replica = self.params.model_config.temporal_patch_size
+      images = tf.tile(images, [1, num_replica, 1, 1, 1])
 
-#     labels = {'one_hot': labels_onehot}
+    labels = {'one_hot': labels_onehot}
 
-#     inputs = {'images': images}
+    inputs = {'images': images}
 
-#     return inputs, labels
-
-
-# class AudioExecutor(BaseExecutor):
-#   """Constructs the necessary modules to perform audio fine-tuning."""
-
-#   def __init__(self, params):
-#     super(AudioExecutor, self).__init__(params=params)
-#     with self.strategy.scope():
-#       self.metrics = base.get_metrics('ml_classification')
-
-#   def prepare_train_inputs(self, inputs):
-#     """Prepares inputs on device to be fed to model in train mode."""
-
-#     params = self.params.train.input
-
-#     if params.raw_audio:
-#       audio = inputs[FeatureNames.AUDIO][:, :, None]
-#     else:
-#       audio = inputs[FeatureNames.AUDIO_MEL]
-
-#     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
-
-#     labels = {'one_hot': labels_onehot}
-#     inputs = {'audio': audio}
-
-#     return inputs, labels
-
-#   def prepare_eval_inputs(self, inputs):
-#     """Prepares inputs on device to be fed to model in eval mode."""
-
-#     params = self.params.eval.input
-
-#     if params.raw_audio:
-#       audio = inputs[FeatureNames.AUDIO][:, :, None]
-#     else:
-#       audio = inputs[FeatureNames.AUDIO_MEL]
-#     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
-
-#     labels = {'one_hot': labels_onehot}
-
-#     inputs = {'audio': audio}
-
-#     return inputs, labels
-
-#   def evaluation_loop(self):
-#     """Iterates over data and returns the aggregated metrics."""
-
-#     # construct the dataloaders and data iterators
-#     eval_dataloaders = self.get_dataloaders(self.data, self.strategy)
-#     assert len(eval_dataloaders) == 1, 'Evaluation only accepts one dataloader!'
-#     iterator = eval_dataloaders[0]['iterator']
-
-#     def outputs_filter(outputs):
-#       labels = outputs['labels']
-#       outputs = {'true': labels['one_hot'],
-#                  'pred': outputs['probabilities']}
-#       return outputs
-
-#     outputs, cnt = self.infer(iterator=iterator, outputs_filter=outputs_filter)
-
-#     # aggregate all outputs
-#     for k in outputs:
-#       outputs[k] = np.concatenate(outputs[k], axis=0)  # (n_samples, n_classes)
-
-#     metrics = measures.compute_map_auc_dprime(outputs['pred'],
-#                                               outputs['true'],
-#                                               'sklearn_')
-#     logging.info('Total evaluation steps: [%d]', cnt)
-#     logging.info('Evaluation metric = %r', metrics)
-
-#     return metrics
+    return inputs, labels
 
 
+class AudioExecutor(BaseExecutor):
+  """Constructs the necessary modules to perform audio fine-tuning."""
+
+  def __init__(self, params):
+    super(AudioExecutor, self).__init__(params=params)
+    with self.strategy.scope():
+      self.metrics = base.get_metrics('ml_classification')
+
+  def prepare_train_inputs(self, inputs):
+    """Prepares inputs on device to be fed to model in train mode."""
+
+    params = self.params.train.input
+
+    if params.raw_audio:
+      audio = inputs[FeatureNames.AUDIO][:, :, None]
+    else:
+      audio = inputs[FeatureNames.AUDIO_MEL]
+
+    labels_onehot = inputs[FeatureNames.LABEL_INDEX]
+
+    labels = {'one_hot': labels_onehot}
+    inputs = {'audio': audio}
+
+    return inputs, labels
+
+  def prepare_eval_inputs(self, inputs):
+    """Prepares inputs on device to be fed to model in eval mode."""
+
+    params = self.params.eval.input
+
+    if params.raw_audio:
+      audio = inputs[FeatureNames.AUDIO][:, :, None]
+    else:
+      audio = inputs[FeatureNames.AUDIO_MEL]
+    labels_onehot = inputs[FeatureNames.LABEL_INDEX]
+
+    labels = {'one_hot': labels_onehot}
+
+    inputs = {'audio': audio}
+
+    return inputs, labels
+
+  def evaluation_loop(self):
+    """Iterates over data and returns the aggregated metrics."""
+
+    # construct the dataloaders and data iterators
+    eval_dataloaders = self.get_dataloaders(self.data, self.strategy)
+    assert len(eval_dataloaders) == 1, 'Evaluation only accepts one dataloader!'
+    iterator = eval_dataloaders[0]['iterator']
+
+    def outputs_filter(outputs):
+      labels = outputs['labels']
+      outputs = {'true': labels['one_hot'],
+                 'pred': outputs['probabilities']}
+      return outputs
+
+    outputs, cnt = self.infer(iterator=iterator, outputs_filter=outputs_filter)
+
+    # aggregate all outputs
+    for k in outputs:
+      outputs[k] = np.concatenate(outputs[k], axis=0)  # (n_samples, n_classes)
+
+    metrics = measures.compute_map_auc_dprime(outputs['pred'],
+                                              outputs['true'],
+                                              'sklearn_')
+    logging.info('Total evaluation steps: [%d]', cnt)
+    logging.info('Evaluation metric = %r', metrics)
+
+    return metrics
+
+class AudioVisionExecutor(BaseExecutor):
+  """Constructs the necessary modules to perform audio-vision fine-tuning."""
+
+  def __init__(self, params):
+    super(AudioVisionExecutor, self).__init__(params=params)
+    with self.strategy.scope():
+      self.metrics = base.get_metrics('ml_classification')
+
+  def prepare_train_inputs(self, inputs):
+    """Prepares inputs on device to be fed to model in train mode."""
+
+    vision_params = self.params.train.input
+    audio_params = self.params.train.audio_input
+
+    images = inputs[FeatureNames.VISION]
+    labels_onehot = inputs[FeatureNames.LABEL_INDEX]
+
+    if vision_params.linearize_vision:
+      img_shape = [vision_params.frame_size, vision_params.frame_size, 3]
+      if vision_params.name in dataloaders.VID_CLS_DS:
+        space_to_depth = vision_params.space_to_depth
+        img_shape = processing.get_video_shape(
+            vision_params, is_space_to_depth=space_to_depth)
+      else:
+        img_shape = [1] + img_shape
+
+      img_shape = [-1] + img_shape
+      images = tf.reshape(images, img_shape)
+
+    if vision_params.name in dataloaders.IMG_CLS_DS:
+      num_replica = self.params.model_config.temporal_patch_size
+      images = tf.tile(images, [1, num_replica, 1, 1, 1])
+
+    if audio_params.raw_audio:
+      audio = inputs[FeatureNames.AUDIO][:, :, None]
+    else:
+      audio = inputs[FeatureNames.AUDIO_MEL]
+
+    labels = {'one_hot': labels_onehot}
+    inputs = {'images': images, 'audio': audio}
+
+    return inputs, labels
+
+  def prepare_eval_inputs(self, inputs):
+    """Prepares inputs on device to be fed to model in eval mode."""
+
+    vision_params = self.params.eval.input
+    audio_params = self.params.eval.audio_input
+
+    images = inputs[FeatureNames.VISION]
+    labels_onehot = inputs[FeatureNames.LABEL_INDEX]
+
+    if vision_params.linearize_vision:
+      img_shape = [vision_params.frame_size, vision_params.frame_size, 3]
+      if vision_params.name in dataloaders.VID_CLS_DS:
+        space_to_depth = vision_params.space_to_depth
+        img_shape = processing.get_video_shape(
+            vision_params, is_space_to_depth=space_to_depth)
+      else:
+        img_shape = [1] + img_shape
+
+      img_shape = [-1] + img_shape
+      images = tf.reshape(images, img_shape)
+
+    if vision_params.name in dataloaders.IMG_CLS_DS:
+      num_replica = self.params.model_config.temporal_patch_size
+      images = tf.tile(images, [1, num_replica, 1, 1, 1])
+
+    if audio_params.raw_audio:
+      audio = inputs[FeatureNames.AUDIO][:, :, None]
+    else:
+      audio = inputs[FeatureNames.AUDIO_MEL]
+
+    labels = {'one_hot': labels_onehot}
+    inputs = {'images': images, 'audio': audio}
+
+    return inputs, labels
+
+  def evaluation_loop(self):
+    """Iterates over data and returns the aggregated metrics."""
+
+    # construct the dataloaders and data iterators
+    eval_dataloaders = self.get_dataloaders(self.data, self.strategy)
+    assert len(eval_dataloaders) == 1, 'Evaluation only accepts one dataloader!'
+    iterator = eval_dataloaders[0]['iterator']
+
+    def outputs_filter(outputs):
+      labels = outputs['labels']
+      outputs = {'true': labels['one_hot'],
+                 'pred': outputs['probabilities']}
+      return outputs
+
+    outputs, cnt = self.infer(iterator=iterator, outputs_filter=outputs_filter)
+
+    # aggregate all outputs
+    for k in outputs:
+      outputs[k] = np.concatenate(outputs[k], axis=0)  # (n_samples, n_classes)
+
+    metrics = measures.compute_map_auc_dprime(outputs['pred'],
+                                              outputs['true'],
+                                              'sklearn_')
+    logging.info('Total evaluation steps: [%d]', cnt)
+    logging.info('Evaluation metric = %r', metrics)
+
+    return metrics
+
+class VisionAudioExecutor(BaseExecutor)
 def get_executor(params):
   """Returns an instance of the Executor depending on the setting."""
 
-  if params.mode == 'train':
-    input_params = params.train.input
+  if params['mode'] == 'train':
+    input_params = params['train']['input']
   else:
-    input_params = params.eval.input
+    input_params = params['eval']['input']
 
   is_aud_cls = input_params.name in dataloaders.AUD_CLS_DS
-  if is_aud_cls:
-    return AudioExecutor(params=params)
-  else:
-    return VisionExecutor(params=params)
+  # if is_aud_cls:
+  #   return AudioExecutor(params=params)
+  # else:
+  #   return VisionExecutor(params=params)
 
