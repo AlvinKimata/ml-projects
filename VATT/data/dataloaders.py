@@ -13,8 +13,10 @@ from data import processing
 ExpConfig = Any
 FeatureNames = processing.FeatureNames
 SELF_SUP_DS = ['howto100m', 'audioset']
-VID_CLS_DS = ['fakeavceleb_dataset']
-AUD_CLS_DS = ['fakeavceleb_dataset']
+AUD_CLS_DS = ['audioset', 'esc50']
+VID_CLS_DS = ['kinetics400']
+AUD_VID_CLS_DS = ['fakeavceleb_dataset']
+
 IMG_CLS_DS = ['imagenet']
 CLS_DS = {'esc50': {'num_classes': 50,
                     'splits': [1, 2, 3, 4, 5],
@@ -31,190 +33,190 @@ REF_FPS = 10  # reference fps used during pre-training
 REF_SR = 48000  # reference sampling rate used during pre-training
 
 
-# class PreTrainLoader(loading.BaseLoader):
-#   """Constructs the dataloader for pre-train."""
+class PreTrainLoader(loading.BaseLoader):
+  """Constructs the dataloader for pre-train."""
 
-#   def __init__(self, dataset_id, params):
-#     # Generic parameters
-#     input_params = params.train.input
-#     self._num_frames = input_params.num_frames
-#     self._frame_size = input_params.frame_size
-#     self._video_stride = input_params.video_stride
-#     self._raw_audio = input_params.raw_audio
-#     self._stft_length = input_params.stft_length
-#     self._stft_step = input_params.stft_step
-#     self._mel_bins = input_params.mel_bins
-#     self._zero_centering_image = input_params.zero_centering_image
-#     self._max_num_words = input_params.max_num_words
-#     self._max_context_sentences = input_params.max_context_sentences
-#     self._space_to_depth = input_params.space_to_depth
-#     self._linearize_vision = input_params.linearize_vision
+  def __init__(self, dataset_id, params):
+    # Generic parameters
+    input_params = params.train.input
+    self._num_frames = input_params.num_frames
+    self._frame_size = input_params.frame_size
+    self._video_stride = input_params.video_stride
+    self._raw_audio = input_params.raw_audio
+    self._stft_length = input_params.stft_length
+    self._stft_step = input_params.stft_step
+    self._mel_bins = input_params.mel_bins
+    self._zero_centering_image = input_params.zero_centering_image
+    self._max_num_words = input_params.max_num_words
+    self._max_context_sentences = input_params.max_context_sentences
+    self._space_to_depth = input_params.space_to_depth
+    self._linearize_vision = input_params.linearize_vision
 
-#     # Augmentation parameters
-#     self._min_resize = input_params.min_resize
-#     self._min_area_ratio = input_params.min_area_ratio
-#     self._max_area_ratio = input_params.max_area_ratio
-#     self._min_aspect_ratio = input_params.min_aspect_ratio
-#     self._max_aspect_ratio = input_params.max_aspect_ratio
-#     self._crop_resize_style = input_params.crop_resize_style
-#     self._scale_jitter = input_params.scale_jitter
-#     self._audio_noise = input_params.audio_noise
-#     self._audio_mixup = input_params.audio_mixup
-#     self._mixup_alpha = input_params.mixup_alpha
-#     self._mixup_beta = input_params.mixup_beta
+    # Augmentation parameters
+    self._min_resize = input_params.min_resize
+    self._min_area_ratio = input_params.min_area_ratio
+    self._max_area_ratio = input_params.max_area_ratio
+    self._min_aspect_ratio = input_params.min_aspect_ratio
+    self._max_aspect_ratio = input_params.max_aspect_ratio
+    self._crop_resize_style = input_params.crop_resize_style
+    self._scale_jitter = input_params.scale_jitter
+    self._audio_noise = input_params.audio_noise
+    self._audio_mixup = input_params.audio_mixup
+    self._mixup_alpha = input_params.mixup_alpha
+    self._mixup_beta = input_params.mixup_beta
 
-#     ds_names = dataset_id.split('+')
-#     assert 'howto100m' in dataset_id, 'Only HT+ is supported'
-#     ds_factories = []
-#     for ds_name in ds_names:
-#       params_factory = {
-#           'is_training': True,
-#           'num_frames': self._num_frames,
-#           'stride': self._video_stride,
-#           'crop_size': self._frame_size,
-#           'min_resize': self._min_resize,
-#           'zero_centering_image': self._zero_centering_image,
-#           'min_area_ratio': self._min_area_ratio,
-#           'max_area_ratio': self._max_area_ratio,
-#           'min_aspect_ratio': self._min_aspect_ratio,
-#           'max_aspect_ratio': self._max_aspect_ratio,
-#           'crop_resize_style': self._crop_resize_style,
-#       }
+    ds_names = dataset_id.split('+')
+    assert 'howto100m' in dataset_id, 'Only HT+ is supported'
+    ds_factories = []
+    for ds_name in ds_names:
+      params_factory = {
+          'is_training': True,
+          'num_frames': self._num_frames,
+          'stride': self._video_stride,
+          'crop_size': self._frame_size,
+          'min_resize': self._min_resize,
+          'zero_centering_image': self._zero_centering_image,
+          'min_area_ratio': self._min_area_ratio,
+          'max_area_ratio': self._max_area_ratio,
+          'min_aspect_ratio': self._min_aspect_ratio,
+          'max_aspect_ratio': self._max_aspect_ratio,
+          'crop_resize_style': self._crop_resize_style,
+      }
 
-#       fps = REF_FPS if ds_name == 'howto100m' else DEFAULT_FPS
-#       n_audio_secs = self._num_frames / REF_FPS
-#       stride = self._video_stride * int(fps // REF_FPS)
-#       params_factory['stride'] = stride
-#       self._num_audio_samples = int(REF_SR * n_audio_secs)
-#       params_factory['num_samples'] = self._num_audio_samples
+      fps = REF_FPS if ds_name == 'howto100m' else DEFAULT_FPS
+      n_audio_secs = self._num_frames / REF_FPS
+      stride = self._video_stride * int(fps // REF_FPS)
+      params_factory['stride'] = stride
+      self._num_audio_samples = int(REF_SR * n_audio_secs)
+      params_factory['num_samples'] = self._num_audio_samples
 
-#       if ds_name == 'howto100m':
-#         params_factory.update({
-#             'output_audio': True,
-#             'max_num_words': self._max_num_words,
-#             'max_context_sentences': self._max_context_sentences,
-#         })
+      if ds_name == 'howto100m':
+        params_factory.update({
+            'output_audio': True,
+            'max_num_words': self._max_num_words,
+            'max_context_sentences': self._max_context_sentences,
+        })
 
-#       # Get the factory.
-#       factory_args = {'subset': 'train'}
-#       factory_class = ds_fctr.get_ds_factory(
-#           dataset_name=ds_name,
-#           )(**factory_args)
+      # Get the factory.
+      factory_args = {'subset': 'train'}
+      factory_class = ds_fctr.get_ds_factory(
+          dataset_name=ds_name,
+          )(**factory_args)
 
-#       ds_factory = factory_class.configure(**params_factory)
+      ds_factory = factory_class.configure(**params_factory)
 
-#       # Add zeros to audio and/or text if the dataset does not have audio
-#       # or text already. Also add a boolean to whether audio and/or text
-#       # are valid and should be used
-#       ds_factory.sampler_builder.add_fn(
-#           functools.partial(
-#               processing.add_audio_text_if_empty,
-#               has_valid_text=(ds_name == 'howto100m'),
-#               has_valid_audio=True,
-#               num_audio_samples=self._num_audio_samples,
-#               max_context_sentences=self._max_context_sentences,
-#               max_num_words=self._max_num_words,
-#           ))
+      # Add zeros to audio and/or text if the dataset does not have audio
+      # or text already. Also add a boolean to whether audio and/or text
+      # are valid and should be used
+      ds_factory.sampler_builder.add_fn(
+          functools.partial(
+              processing.add_audio_text_if_empty,
+              has_valid_text=(ds_name == 'howto100m'),
+              has_valid_audio=True,
+              num_audio_samples=self._num_audio_samples,
+              max_context_sentences=self._max_context_sentences,
+              max_num_words=self._max_num_words,
+          ))
 
-#       # Remove labels from inputs
-#       if ds_name == 'audioset':
-#         ds_factory.postprocessor_builder.add_fn(processing.remove_label)
+      # Remove labels from inputs
+      if ds_name == 'audioset':
+        ds_factory.postprocessor_builder.add_fn(processing.remove_label)
 
-#       # Add audio preprocessing.
-#       if self._audio_noise > 0.:
-#         # Add gaussian noise
-#         ds_factory.preprocessor_builder.add_fn(
-#             functools.partial(
-#                 processing.add_gaussian,
-#                 gamma=self._audio_noise,
-#                 ),
-#             feature_name=FeatureNames.AUDIO,
-#             fn_name='volume_gaussian'
-#             )
+      # Add audio preprocessing.
+      if self._audio_noise > 0.:
+        # Add gaussian noise
+        ds_factory.preprocessor_builder.add_fn(
+            functools.partial(
+                processing.add_gaussian,
+                gamma=self._audio_noise,
+                ),
+            feature_name=FeatureNames.AUDIO,
+            fn_name='volume_gaussian'
+            )
 
-#       if self._raw_audio:
-#         ds_factory.preprocessor_builder.add_fn(
-#             processing.extend_waveform_dim,
-#             feature_name=FeatureNames.AUDIO,
-#             fn_name='extend_waveform',
-#             )
-#       else:
-#         ds_factory.preprocessor_builder.add_fn(
-#             functools.partial(
-#                 processing.raw_audio_to_spectrogram,
-#                 sample_rate=REF_SR,
-#                 stft_length=self._stft_length,
-#                 stft_step=self._stft_step,
-#                 mel_bins=self._mel_bins,
-#                 rm_audio=True
-#                 )
-#             )
-#         ds_factory.preprocessor_builder.add_fn(
-#             processing.normalize_spectrogram,
-#             feature_name=FeatureNames.AUDIO_MEL,
-#             fn_name='normalize_mel',
-#             )
+      if self._raw_audio:
+        ds_factory.preprocessor_builder.add_fn(
+            processing.extend_waveform_dim,
+            feature_name=FeatureNames.AUDIO,
+            fn_name='extend_waveform',
+            )
+      else:
+        ds_factory.preprocessor_builder.add_fn(
+            functools.partial(
+                processing.raw_audio_to_spectrogram,
+                sample_rate=REF_SR,
+                stft_length=self._stft_length,
+                stft_step=self._stft_step,
+                mel_bins=self._mel_bins,
+                rm_audio=True
+                )
+            )
+        ds_factory.preprocessor_builder.add_fn(
+            processing.normalize_spectrogram,
+            feature_name=FeatureNames.AUDIO_MEL,
+            fn_name='normalize_mel',
+            )
 
-#       # Extra data augmentation on video.
-#       if self._scale_jitter and self._crop_resize_style == 'VGG':
-#         # scale jitter is applied only when crop+resize is VGG-style
-#         ds_factory.preprocessor_builder.add_fn(
-#             functools.partial(
-#                 processing.scale_jitter_augm,
-#                 prob=0.8,
-#                 ),
-#             feature_name=FeatureNames.VISION,
-#             fn_name=f'{FeatureNames.VISION}_jitter_scale',
-#             add_before_fn_name=f'{FeatureNames.VISION}_resize_smallest'
-#             )
+      # Extra data augmentation on video.
+      if self._scale_jitter and self._crop_resize_style == 'VGG':
+        # scale jitter is applied only when crop+resize is VGG-style
+        ds_factory.preprocessor_builder.add_fn(
+            functools.partial(
+                processing.scale_jitter_augm,
+                prob=0.8,
+                ),
+            feature_name=FeatureNames.VISION,
+            fn_name=f'{FeatureNames.VISION}_jitter_scale',
+            add_before_fn_name=f'{FeatureNames.VISION}_resize_smallest'
+            )
 
-#       ds_factories.append(ds_factory)
+      ds_factories.append(ds_factory)
 
-#     # Add batch-level data-agnostic post-processing functions
-#     postprocess_fns = []
+    # Add batch-level data-agnostic post-processing functions
+    postprocess_fns = []
 
-#     if self._space_to_depth:
-#       postprocess_fns.append(
-#           functools.partial(
-#               processing.space_to_depth,
-#               temporal_block_size=2,
-#               spatial_block_size=2,
-#               feature_name=FeatureNames.VISION,
-#               )
-#           )
+    if self._space_to_depth:
+      postprocess_fns.append(
+          functools.partial(
+              processing.space_to_depth,
+              temporal_block_size=2,
+              spatial_block_size=2,
+              feature_name=FeatureNames.VISION,
+              )
+          )
 
-#     if self._linearize_vision:
-#       postprocess_fns.append(
-#           functools.partial(
-#               processing.linearize,
-#               feature_name=FeatureNames.VISION,
-#               )
-#           )
+    if self._linearize_vision:
+      postprocess_fns.append(
+          functools.partial(
+              processing.linearize,
+              feature_name=FeatureNames.VISION,
+              )
+          )
 
-#     if self._audio_mixup:
-#       feat_name = FeatureNames.AUDIO if self._raw_audio else FeatureNames.AUDIO_MEL
-#       postprocess_fns.append(
-#           functools.partial(
-#               processing.batched_mixup,
-#               feature_name=feat_name,
-#               alpha=self._mixup_alpha,
-#               beta=self._mixup_beta,
-#               mixup_labels=False,
-#               )
-#           )
+    if self._audio_mixup:
+      feat_name = FeatureNames.AUDIO if self._raw_audio else FeatureNames.AUDIO_MEL
+      postprocess_fns.append(
+          functools.partial(
+              processing.batched_mixup,
+              feature_name=feat_name,
+              alpha=self._mixup_alpha,
+              beta=self._mixup_beta,
+              mixup_labels=False,
+              )
+          )
 
-#     num_post_processors = len(postprocess_fns)
-#     if num_post_processors == 0:
-#       postprocess_fns = None
+    num_post_processors = len(postprocess_fns)
+    if num_post_processors == 0:
+      postprocess_fns = None
 
-#     super(PreTrainLoader, self).__init__(
-#         dmvr_factory=ds_factories,
-#         params=input_params,
-#         postprocess_fns=postprocess_fns,
-#         num_epochs=-1,
-#         mode='train',
-#         name=dataset_id,
-#         )
+    super(PreTrainLoader, self).__init__(
+        dmvr_factory=ds_factories,
+        params=input_params,
+        postprocess_fns=postprocess_fns,
+        num_epochs=-1,
+        mode='train',
+        name=dataset_id,
+        )
 
 
 # class EvalLoader(loading.BaseLoader):

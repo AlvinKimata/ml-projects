@@ -61,11 +61,11 @@ def get_optimizer_step(checkpoint_path):
 def create_strategy(strategy_config):
   """Constructs a strategy given the strategy config."""
 
-  distribution_strategy = strategy_config.distribution_strategy.lower()
+  distribution_strategy = strategy_config['distribution_strategy'].lower()
 
   if distribution_strategy == 'tpu':
     cluster_resolver = tf.distribute.cluster_resolver.TPUClusterResolver(
-        tpu=strategy_config.tpu
+        tpu=strategy_config['tpu']
         )
     if strategy_config.tpu not in ('', 'local'):
       tf.config.experimental_connect_to_cluster(cluster_resolver)

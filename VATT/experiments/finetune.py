@@ -24,7 +24,7 @@ class BaseExecutor(base.Executor):
   """Constructs the necessary modules to perform fine-tuning."""
 
   def __init__(self, params):
-    strategy = base.create_strategy(params.strategy_config)
+    strategy = base.create_strategy(params['strategy_config'])
     data = self.construct_data(params)
     with strategy.scope():
       model = self.construct_model(params)
@@ -164,22 +164,22 @@ class BaseExecutor(base.Executor):
     """Build models for train/eval."""
 
     num_test_samples = 0
-    if params.mode == 'train':
-      input_params = params.train.input
-      ds_name = input_params.name
+    if params['mode'] == 'train':
+      input_params = params['train']['input']
+      ds_name = input_params['name']
       is_vid_cls = ds_name in dataloaders.VID_CLS_DS
       is_img_cls = ds_name in dataloaders.IMG_CLS_DS
       is_aud_cls = ds_name in dataloaders.AUD_CLS_DS
 
-    elif params.mode == 'eval':
-      input_params = params.eval.input
-      ds_name = input_params.name
+    elif params['mode'] == 'eval':
+      input_params = params['eval']['input']
+      ds_name = input_params['name']
       is_vid_cls = ds_name in dataloaders.VID_CLS_DS
       is_img_cls = ds_name in dataloaders.IMG_CLS_DS
       is_aud_cls = ds_name in dataloaders.AUD_CLS_DS
       if not is_img_cls:
-        num_test_samples = params.eval.input.num_windows_test
-        if params.eval.input.multi_crop and not is_aud_cls:
+        num_test_samples = params['eval']['input']['num_windows_test']
+        if params['eval']['input']['multi_crop'] and not is_aud_cls:
           num_test_samples *= 3
 
     else:
@@ -188,14 +188,14 @@ class BaseExecutor(base.Executor):
     if is_aud_cls:
       input_shape = processing.get_audio_shape(input_params, REF_FPS, REF_SR)
     elif is_vid_cls:
-      space_to_depth = input_params.space_to_depth
+      space_to_depth = input_params['space_to_depth']
       input_shape = processing.get_video_shape(
           input_params, is_space_to_depth=space_to_depth)
     elif is_img_cls:
       input_shape = processing.get_video_shape(input_params)
 
     if is_img_cls:
-      input_shape[0] = params.model_config.temporal_patch_size
+      input_shape[0] = params['model_config']['temporal_patch_size']
 
     num_classes = dataloaders.CLS_DS[ds_name]['num_classes']
 
@@ -371,8 +371,8 @@ class AudioVisionExecutor(BaseExecutor):
   def prepare_train_inputs(self, inputs):
     """Prepares inputs on device to be fed to model in train mode."""
 
-    vision_params = self.params.train.input
-    audio_params = self.params.train.audio_input
+    vision_params = self.params['train']['input']
+    audio_params = self.params['train']['audio_input']
 
     images = inputs[FeatureNames.VISION]
     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
@@ -474,9 +474,9 @@ def get_executor(params):
   else:
     input_params = params['eval']['input']
 
-  is_aud_cls = input_params.name in dataloaders.AUD_CLS_DS
-  is_vid_cls = input_params.name in dataloaders.VID_CLS_DS
-  is_aud_vid_cls = input_params.name in dataloaders.AUD_VID_CLS_DS
+  is_aud_cls = input_params['name'] in dataloaders.AUD_CLS_DS
+  is_vid_cls = input_params['name'] in dataloaders.VID_CLS_DS
+  is_aud_vid_cls = input_params['name'] in dataloaders.AUD_VID_CLS_DS
   if is_aud_cls:
     return AudioExecutor(params=params)
   elif is_vid_cls:
