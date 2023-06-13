@@ -1,0 +1,105 @@
+checkpoint_path: 'vatt/pretrained_ckpt'
+eval:
+  input:
+    audio_noise: 0.0
+    audio_stride: 2
+    batch_size: 8
+    color_augment: true
+    crop_resize_style: VGG
+    frame_size: 224
+    has_data: true
+    label_smoothing: 0.1
+    linearize_vision: true
+    max_area_ratio: 1.0
+    max_aspect_ratio: 2.0
+    mel_bins: 80
+    min_area_ratio: 0.08
+    min_aspect_ratio: 0.5
+    min_resize: 224
+    mixup: false
+    mixup_alpha: 5
+    multi_crop: true
+    name: fakeavceleb_dataset
+    num_frames: 10
+    num_windows_test: 4
+    raw_audio: true
+    scale_jitter: true
+    space_to_depth: false
+    split: "test"
+    stft_length: 0.04267
+    stft_step: 0.02134
+    text_tokenizer: WordTokenizer
+    video_stride: 2
+    zero_centering_image: true
+mode: train
+model_config:
+  backbone_config:
+    name: unified_backbone
+    unified_backbone: ut_medium
+  head_config:
+    bridge:
+      aud_to_vid_txt_kwargs:
+        d_model: 512
+        modality: audio
+        name: audio_mlp_module
+      bn_config:
+        epsilon: 1e-05
+        momentum: 0.9
+        name: batch_norm
+        scale: true
+      name: mlp_fac
+      txt_to_vid_aud_kwargs:
+        d_model: 256
+        modality: text
+        name: text_mlp_module
+      use_xreplica_bn: true
+      vid_to_aud_txt_kwargs:
+        d_model: 512
+        modality: video
+        name: video_mlp_module
+  loss_config:
+    bridge:
+      aud_txt_weight: 0.0
+      loss_weight: 1.0
+      name: asymmetric_nce
+      temperature: 0.07
+      vid_aud_weight: 1.0
+      vid_txt_weight: 1.0
+  model_name: uvatt_mlp_fac
+model_dir: 'vatt/pretrained_ckpt'
+strategy_config:
+  distribution_strategy: mirrored
+  tpu: null
+task: Finetune
+train:
+  gradient_clip_norm: 0.75
+  gradient_clip_norm_cls: 0.0
+  input:
+    audio_noise: 0.0
+    audio_stride: 2
+    batch_size: 8
+    color_augment: true
+    crop_resize_style: VGG
+    frame_size: 224
+    has_data: true
+    label_smoothing: 0.1
+    linearize_vision: true
+    max_area_ratio: 1.0
+    max_aspect_ratio: 2.0
+    mel_bins: 80
+    min_area_ratio: 0.08
+    min_aspect_ratio: 0.5
+    min_resize: 224
+    mixup: false
+    mixup_alpha: 5
+    multi_crop: true
+    name: fakeavceleb_dataset
+    num_frames: 10
+    num_windows_test: 4
+    raw_audio: true
+    scale_jitter: true
+    space_to_depth: false
+    split: "train"
+    stft_length: 0.04267
+    stft_step: 0.02134
+    text_tokenizer: WordTokenizer
