@@ -36,8 +36,8 @@ def main(argv):
     executor = finetune.get_executor(params = params)
     print(f"Executor is: {executor}")
    
-    print(f"Params mode set to: {params.mode}")
-    # return executor.run(mode = params.mode)
+    # print(f"Params mode set to: {params.mode}")
+    return executor.run(mode = params.mode)
 
 if __name__ == '__main__':
     app.run(main)

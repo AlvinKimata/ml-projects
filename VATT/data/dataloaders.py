@@ -5,9 +5,9 @@ from typing import Any, Optional
 
 import tensorflow as tf
 
-from vatt.data import loading
-from vatt.data import processing
-from vatt.data.datasets import factory as ds_fctr
+from data import loading
+from data import processing
+from data.datasets import factory as ds_fctr
 
 
 ExpConfig = Any

@@ -4,7 +4,7 @@ from absl import logging
 import numpy as np
 import tensorflow as tf
 
-# from data import dataloaders
+from data import dataloaders
 from data import processing
 from experiments import base
 # from models.backbones.audio import factory as aud_factory
@@ -20,214 +20,214 @@ from utils.train import schedules
 # REF_SR = dataloaders.REF_SR  # reference sampling rate used during training
 
 
-# class BaseExecutor(base.Executor):
-#   """Constructs the necessary modules to perform fine-tuning."""
+class BaseExecutor(base.Executor):
+  """Constructs the necessary modules to perform fine-tuning."""
 
-#   def __init__(self, params):
-#     strategy = base.create_strategy(params.strategy_config)
-#     data = self.construct_data(params)
-#     with strategy.scope():
-#       model = self.construct_model(params)
-#       metrics = base.get_metrics('classification')
+  def __init__(self, params):
+    strategy = base.create_strategy(params.strategy_config)
+    data = self.construct_data(params)
+    with strategy.scope():
+      model = self.construct_model(params)
+      metrics = base.get_metrics('classification')
 
-#     super(BaseExecutor, self).__init__(model=model,
-#                                        data=data,
-#                                        params=params,
-#                                        strategy=strategy,
-#                                        metrics=metrics)
-#     self._manual_restore = True
+    super(BaseExecutor, self).__init__(model=model,
+                                       data=data,
+                                       params=params,
+                                       strategy=strategy,
+                                       metrics=metrics)
+    self._manual_restore = True
 
-#   def prepare_inputs(self, inputs):
-#     if self.params.mode == 'train':
-#       return self.prepare_train_inputs(inputs)
-#     elif self.params.mode == 'eval':
-#       return self.prepare_eval_inputs(inputs)
-#     else:
-#       raise ValueError('Invalid mode!')
+  def prepare_inputs(self, inputs):
+    if self.params.mode == 'train':
+      return self.prepare_train_inputs(inputs)
+    elif self.params.mode == 'eval':
+      return self.prepare_eval_inputs(inputs)
+    else:
+      raise ValueError('Invalid mode!')
 
-#   def prepare_train_inputs(self, inputs):
-#     raise NotImplementedError
+  def prepare_train_inputs(self, inputs):
+    raise NotImplementedError
 
-#   def prepare_eval_inputs(self, inputs):
-#     raise NotImplementedError
+  def prepare_eval_inputs(self, inputs):
+    raise NotImplementedError
 
-#   def construct_data(self, params):
+  def construct_data(self, params):
 
-#     if params.mode == 'train':
-#       dataset_id = params.train.input.name
-#       is_aud_cls = params.train.input.name in dataloaders.AUD_CLS_DS
-#       if is_aud_cls:
-#         data = dataloaders.AudioFineTuneLoader(
-#             dataset_id=dataset_id,
-#             params=params,
-#             )
-#       else:
-#         data = dataloaders.VisionFineTuneLoader(
-#             dataset_id=dataset_id,
-#             params=params,
-#             )
+    if params.mode == 'train':
+      dataset_id = params.train.input.name
+      is_aud_cls = params.train.input.name in dataloaders.AUD_CLS_DS
+      if is_aud_cls:
+        data = dataloaders.AudioFineTuneLoader(
+            dataset_id=dataset_id,
+            params=params,
+            )
+      else:
+        data = dataloaders.VisionFineTuneLoader(
+            dataset_id=dataset_id,
+            params=params,
+            )
 
-#     elif params.mode == 'eval':
-#       dataset_id = params.eval.input.name
-#       is_aud_cls = params.eval.input.name in dataloaders.AUD_CLS_DS
-#       if is_aud_cls:
-#         data = dataloaders.AudioEvalLoader(
-#             dataset_id=dataset_id,
-#             params=params,
-#             )
-#       else:
-#         data = dataloaders.VisionEvalLoader(
-#             dataset_id=dataset_id,
-#             params=params,
-#             )
+    elif params.mode == 'eval':
+      dataset_id = params.eval.input.name
+      is_aud_cls = params.eval.input.name in dataloaders.AUD_CLS_DS
+      if is_aud_cls:
+        data = dataloaders.AudioEvalLoader(
+            dataset_id=dataset_id,
+            params=params,
+            )
+      else:
+        data = dataloaders.VisionEvalLoader(
+            dataset_id=dataset_id,
+            params=params,
+            )
 
-#     else:
-#       raise ValueError('Invalid mode!')
+    else:
+      raise ValueError('Invalid mode!')
 
-#     return [data]
+    return [data]
 
-#   def create_replicated_train_step(self, strategy, model):
-#     metrics = self.metrics
-#     optimizer = model.optimizer
-#     gradient_clip_norm = self.params.train.gradient_clip_norm
-#     gradient_clip_norm_cls = self.params.train.gradient_clip_norm_cls
+  def create_replicated_train_step(self, strategy, model):
+    metrics = self.metrics
+    optimizer = model.optimizer
+    gradient_clip_norm = self.params.train.gradient_clip_norm
+    gradient_clip_norm_cls = self.params.train.gradient_clip_norm_cls
 
-#     weights_backbone = []
-#     weights_cls = []
-#     for w in model.trainable_variables:
-#       if 'classification' in w.name:
-#         weights_cls.append(w)
-#       else:
-#         weights_backbone.append(w)
+    weights_backbone = []
+    weights_cls = []
+    for w in model.trainable_variables:
+      if 'classification' in w.name:
+        weights_cls.append(w)
+      else:
+        weights_backbone.append(w)
 
-#     @tf.function
-#     def _replicated_step(inputs):
-#       """Replicated training step."""
-#       replicator = base.Replicator(
-#           tf.distribute.get_replica_context()
-#           )
-#       inputs, labels = self.prepare_inputs(inputs)
+    @tf.function
+    def _replicated_step(inputs):
+      """Replicated training step."""
+      replicator = base.Replicator(
+          tf.distribute.get_replica_context()
+          )
+      inputs, labels = self.prepare_inputs(inputs)
 
-#       outputs = model(inputs, training=True)
+      outputs = model(inputs, training=True)
 
-#       # update accuracy metrics
-#       for m in metrics.values():
-#         m.update_state(labels['one_hot'], outputs['probabilities'])
+      # update accuracy metrics
+      for m in metrics.values():
+        m.update_state(labels['one_hot'], outputs['probabilities'])
 
-#       # calculate losses
-#       all_losses = model.loss_fn(labels=labels,
-#                                  outputs=outputs,
-#                                  replicator=replicator)
-#       losses = {}
-#       for k, v in all_losses.items():
-#         losses[k] = tf.reduce_mean(v)
-#         losses[k] = tf.where(tf.math.is_nan(v), 0., v)
+      # calculate losses
+      all_losses = model.loss_fn(labels=labels,
+                                 outputs=outputs,
+                                 replicator=replicator)
+      losses = {}
+      for k, v in all_losses.items():
+        losses[k] = tf.reduce_mean(v)
+        losses[k] = tf.where(tf.math.is_nan(v), 0., v)
 
-#       per_replica_loss = losses['total_loss'] / strategy.num_replicas_in_sync
+      per_replica_loss = losses['total_loss'] / strategy.num_replicas_in_sync
 
-#       # apply gradients
-#       grads_backbone = tf.gradients(per_replica_loss, weights_backbone)
-#       grads_cls = tf.gradients(per_replica_loss, weights_cls)
+      # apply gradients
+      grads_backbone = tf.gradients(per_replica_loss, weights_backbone)
+      grads_cls = tf.gradients(per_replica_loss, weights_cls)
 
-#       if gradient_clip_norm > 0:
-#         grads_backbone, _ = tf.clip_by_global_norm(grads_backbone,
-#                                                    gradient_clip_norm)
+      if gradient_clip_norm > 0:
+        grads_backbone, _ = tf.clip_by_global_norm(grads_backbone,
+                                                   gradient_clip_norm)
 
-#       if gradient_clip_norm_cls > 0:
-#         grads_cls, _ = tf.clip_by_global_norm(grads_cls,
-#                                               gradient_clip_norm_cls)
+      if gradient_clip_norm_cls > 0:
+        grads_cls, _ = tf.clip_by_global_norm(grads_cls,
+                                              gradient_clip_norm_cls)
 
-#       grads = grads_backbone + grads_cls
-#       weights = weights_backbone + weights_cls
+      grads = grads_backbone + grads_cls
+      weights = weights_backbone + weights_cls
 
-#       optimizer.apply_gradients(zip(grads, weights))
-#       return losses
+      optimizer.apply_gradients(zip(grads, weights))
+      return losses
 
-#     return _replicated_step
+    return _replicated_step
 
-#   def partial_restore(self, params, model):
-#     """Restore backbone weights from pretrained model checkpoint."""
+  def partial_restore(self, params, model):
+    """Restore backbone weights from pretrained model checkpoint."""
 
-#     ckpt_path = params.checkpoint_path
-#     if ckpt_path is None:
-#       logging.info('No pretrained checkpoint provided, '
-#                    'training with randomly initialized weights.')
-#       return
+    ckpt_path = params.checkpoint_path
+    if ckpt_path is None:
+      logging.info('No pretrained checkpoint provided, '
+                   'training with randomly initialized weights.')
+      return
 
-#     skipped = restore.assign_weight_from_ckpt(model, ckpt_path)
-#     logging.info(
-#         'Successfully restored from pretrained checkpoint, while skipping: %s',
-#         skipped,
-#         )
+    skipped = restore.assign_weight_from_ckpt(model, ckpt_path)
+    logging.info(
+        'Successfully restored from pretrained checkpoint, while skipping: %s',
+        skipped,
+        )
 
-#   def construct_model(self, params):
-#     """Build models for train/eval."""
+  def construct_model(self, params):
+    """Build models for train/eval."""
 
-#     num_test_samples = 0
-#     if params.mode == 'train':
-#       input_params = params.train.input
-#       ds_name = input_params.name
-#       is_vid_cls = ds_name in dataloaders.VID_CLS_DS
-#       is_img_cls = ds_name in dataloaders.IMG_CLS_DS
-#       is_aud_cls = ds_name in dataloaders.AUD_CLS_DS
+    num_test_samples = 0
+    if params.mode == 'train':
+      input_params = params.train.input
+      ds_name = input_params.name
+      is_vid_cls = ds_name in dataloaders.VID_CLS_DS
+      is_img_cls = ds_name in dataloaders.IMG_CLS_DS
+      is_aud_cls = ds_name in dataloaders.AUD_CLS_DS
 
-#     elif params.mode == 'eval':
-#       input_params = params.eval.input
-#       ds_name = input_params.name
-#       is_vid_cls = ds_name in dataloaders.VID_CLS_DS
-#       is_img_cls = ds_name in dataloaders.IMG_CLS_DS
-#       is_aud_cls = ds_name in dataloaders.AUD_CLS_DS
-#       if not is_img_cls:
-#         num_test_samples = params.eval.input.num_windows_test
-#         if params.eval.input.multi_crop and not is_aud_cls:
-#           num_test_samples *= 3
+    elif params.mode == 'eval':
+      input_params = params.eval.input
+      ds_name = input_params.name
+      is_vid_cls = ds_name in dataloaders.VID_CLS_DS
+      is_img_cls = ds_name in dataloaders.IMG_CLS_DS
+      is_aud_cls = ds_name in dataloaders.AUD_CLS_DS
+      if not is_img_cls:
+        num_test_samples = params.eval.input.num_windows_test
+        if params.eval.input.multi_crop and not is_aud_cls:
+          num_test_samples *= 3
 
-#     else:
-#       raise ValueError('Invalid mode!')
+    else:
+      raise ValueError('Invalid mode!')
 
-#     if is_aud_cls:
-#       input_shape = processing.get_audio_shape(input_params, REF_FPS, REF_SR)
-#     elif is_vid_cls:
-#       space_to_depth = input_params.space_to_depth
-#       input_shape = processing.get_video_shape(
-#           input_params, is_space_to_depth=space_to_depth)
-#     elif is_img_cls:
-#       input_shape = processing.get_video_shape(input_params)
+    if is_aud_cls:
+      input_shape = processing.get_audio_shape(input_params, REF_FPS, REF_SR)
+    elif is_vid_cls:
+      space_to_depth = input_params.space_to_depth
+      input_shape = processing.get_video_shape(
+          input_params, is_space_to_depth=space_to_depth)
+    elif is_img_cls:
+      input_shape = processing.get_video_shape(input_params)
 
-#     if is_img_cls:
-#       input_shape[0] = params.model_config.temporal_patch_size
+    if is_img_cls:
+      input_shape[0] = params.model_config.temporal_patch_size
 
-#     num_classes = dataloaders.CLS_DS[ds_name]['num_classes']
+    num_classes = dataloaders.CLS_DS[ds_name]['num_classes']
 
-#     model_kwargs = {'num_classes': num_classes,
-#                     'num_test_samples': num_test_samples}
-#     if is_aud_cls:
-#       inputs = {'audio': tf.keras.Input(shape=input_shape)}
-#       model_factory = aud_factory
-#     else:
-#       inputs = {'images': tf.keras.Input(shape=input_shape)}
-#       model_factory = vid_factory
+    model_kwargs = {'num_classes': num_classes,
+                    'num_test_samples': num_test_samples}
+    if is_aud_cls:
+      inputs = {'audio': tf.keras.Input(shape=input_shape)}
+      model_factory = aud_factory
+    else:
+      inputs = {'images': tf.keras.Input(shape=input_shape)}
+      model_factory = vid_factory
 
-#     model = model_factory.build_model(params=params.model_config,
-#                                       override_params=model_kwargs,
-#                                       mode='predict')
-#     outputs = model(inputs, None)
-#     keras_model = tf.keras.Model(inputs=inputs, outputs=outputs)
-#     keras_model.loss_fn = model.loss_fn
+    model = model_factory.build_model(params=params.model_config,
+                                      override_params=model_kwargs,
+                                      mode='predict')
+    outputs = model(inputs, None)
+    keras_model = tf.keras.Model(inputs=inputs, outputs=outputs)
+    keras_model.loss_fn = model.loss_fn
 
-#     if params.mode == 'train':
-#       self.partial_restore(params, keras_model)
+    if params.mode == 'train':
+      self.partial_restore(params, keras_model)
 
-#     logging.info('Number of parameters in model: %f M.',
-#                  keras_model.count_params() / 10.**6)
+    logging.info('Number of parameters in model: %f M.',
+                 keras_model.count_params() / 10.**6)
 
-#     learning_rate = schedules.get_learning_rate(
-#         params.train.optimizer.learning_rate
-#         )
-#     keras_model.optimizer = optimizers.get_optimizer(
-#         learning_rate, params.train.optimizer
-#         )
-#     return keras_model
+    learning_rate = schedules.get_learning_rate(
+        params.train.optimizer.learning_rate
+        )
+    keras_model.optimizer = optimizers.get_optimizer(
+        learning_rate, params.train.optimizer
+        )
+    return keras_model
 
 
 # class VisionExecutor(BaseExecutor):
