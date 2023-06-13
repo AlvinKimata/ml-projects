@@ -1,4 +1,4 @@
-checkpoint_path: 'vatt/pretrained_ckpt'
+checkpoint_path: None
 eval:
   input:
     audio_noise: 0.0
