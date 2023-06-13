@@ -2,7 +2,7 @@
 
 import tensorflow as tf
 
-from models import audio_resnet as audio_backbone
+from models.audio import audio_resnet as audio_backbone
 from models import i3d as video_backbone
 from models import bert_text as bert_backbone
 from models.unified import uvatt as universal_transformer
