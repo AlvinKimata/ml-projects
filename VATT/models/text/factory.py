@@ -5,16 +5,16 @@ from typing import Any, Dict, Optional, Text
 
 import tensorflow as tf
 
-from vatt.configs import factory as configs_factory
-from vatt.configs import text as text_config
-from vatt.modeling.backbones.text import bert
-from vatt.modeling.backbones.text import linear
-from vatt.modeling.backbones.text import t5
+from configs import factory as configs_factory
+from configs import text as text_config
+from models.text import bert_text as bert
+# from modeling.backbones.text import linear
+# from modeling.backbones.text import t5
 
 
 LANGUAGE_MODEL_HEADS = {
-    "linear": linear.LinearLM,
-    "t5": t5.T5Encoder,
+    # "linear": linear.LinearLM,
+    # "t5": t5.T5Encoder,
     "bert": bert.BertEncoder,
 }
 
@@ -158,15 +158,17 @@ def build_model(
   if override_params is not None:
     params.override(override_params)
 
-  model_name = params.name.lower()
-  if model_name.startswith("linear"):
-    base_lm_head = LANGUAGE_MODEL_HEADS["linear"]
-  elif model_name.startswith("t5"):
-    base_lm_head = LANGUAGE_MODEL_HEADS["t5"]
-  elif model_name.startswith("bert"):
-    base_lm_head = LANGUAGE_MODEL_HEADS["bert"]
-  else:
-    raise ValueError("Unknown model name {!r}".format(params.name))
+  # model_name = params.name.lower()
+  base_lm_head = LANGUAGE_MODEL_HEADS["bert"]
+
+  # if model_name.startswith("linear"):
+  #   base_lm_head = LANGUAGE_MODEL_HEADS["linear"]
+  # elif model_name.startswith("t5"):
+  #   base_lm_head = LANGUAGE_MODEL_HEADS["t5"]
+  # elif model_name.startswith("bert"):
+  #   base_lm_head = LANGUAGE_MODEL_HEADS["bert"]
+  # else:
+  #   raise ValueError("Unknown model name {!r}".format(params.name))
 
   model = LanguageModel(
       base_lm_head=base_lm_head,

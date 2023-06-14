@@ -121,8 +121,8 @@ def build_model(params = None, override_params = None,model_arch = None):
                                     'specified')
     params = configs_factory.build_model_configs(model_arch)
 
-  if override_params is not None:
-    params.override(override_params)
+  # if override_params is not None:
+  #   params.override(override_params)
 
   backbone_name = params['model_config']['backbone_config']['name']
   if backbone_name.startswith('unified_backbone'):
@@ -137,6 +137,6 @@ def build_model(params = None, override_params = None,model_arch = None):
       params=params
   )
 
-  logging.info('Entire MM model %s created successfully.', params['model_config']['model_name'])
+  print('Entire MM model %s created successfully.', params['model_config']['model_name'])
 
   return model

@@ -168,13 +168,13 @@ def build_model(
   if override_params is not None:
     params.override(override_params)
 
-  model_name = params.name
-  if model_name.startswith('i3d'):
-    base_model = i3d.InceptionI3D
+  # model_name = params.name
+  # if model_name.startswith('i3d'):
+  base_model = i3d.InceptionI3D
   # elif model_name.startswith('vit'):
   #   base_model = vitx3d.ViTx3D
-  else:
-    raise ValueError('Unknown backbone {!r}'.format(model_name))
+  # else:
+  #   raise ValueError('Unknown backbone {!r}'.format(model_name))
 
   if mode == 'predict':
     pred_aggregator = PredictionAggregator(

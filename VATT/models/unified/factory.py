@@ -8,7 +8,7 @@ import tensorflow as tf
 
 from configs import factory as configs_factory
 from configs import unified as unified_config
-from modeling.backbones.unified import uvatt
+from models.unified import uvatt
 
 
 class UnifiedModule(tf.keras.Model):

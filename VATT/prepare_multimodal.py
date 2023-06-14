@@ -1,62 +1,40 @@
 import yaml
 import numpy as np
 import tensorflow as tf
-from models import multimodal 
-from models.audio import audio_resnet as audio_backbone
-from models.video import i3d as video_backbone
-from models.text import bert_text as bert_backbone
+# from models import multimodal 
 from models import model_factory as multimodal_factory
+from models import multimodal as vatt_models
+from models.heads import factory as head_factory
+
 
 with open('config.yaml', 'r') as f:
     configurations = yaml.load(f, Loader=yaml.FullLoader)
 
-i3d = video_backbone.InceptionI3D()
 
-audio_encoder = audio_backbone.Resnet()
-# video_encoder = video_backbone.VideoModel(base_model = i3d)
-text_encoder = bert_backbone.BertEncoder()
-
-"""
- Args:
-      video: The videos tensor of shape [B1, T, H, W, 3] where B1 is the batch
-        size, T is the number of frames per clip, H the height, W the width
-        and 3 the rgb channels.
-      audio: The audio tensor of shape [B2, T', F] where B2 is the
-        batch size, T' is the number of temporal frames, F is the number of
-        frequency frames.
-      word_ids: If words_embeddings is set to None, it will use the word indices
-        input instead so that we can compute the word embeddings within the
-        model graph. The expected shape is [B3, N, D] where B3 is the batch size
-        and N the maximum number of words per sentence.
-"""
-# ATVF = multimodal_factory.vatt_models.AudioTextVideoFusion(audio_backbone=audio_encoder,
-#                                                            video_backbone=video_encoder,
-#                                                            text_backbone=text_encoder)
 video_data = np.random.rand(10, 300, 300, 3)
-audio_data = np.random.rand(4, 2)
-text_data = np.random.rand(32, 20, 1)
+audio_data = np.random.rand(10, 48_000)
+text_data = np.random.rand(10, 20, 1)
 
 inputs = {'video': video_data,
           'audio': audio_data,
-          'text': text_data}
+          'word_ids': text_data}
 
-# audio_embeddings = audio_encoder(inputs['audio'])
-# print(audio_embeddings.shape)
+video_shape = video_data.shape[1:]  # Exclude the batch size
+audio_shape = audio_data.shape[1:]  # Exclude the batch size
+text_shape = text_data.shape[1:]    # Exclude the batch size
 
-print(audio_encoder.input)
-# outputs = ATVF(video = inputs['video'],  audio = inputs['audio'], word_ids = inputs['text'], training = False)
-# print(outputs.shape)
-# model = multimodal_factory.build_model(params = configurations)
-
-# print(model)
-
-# for layer in model.layers:
-#     print(layer)
+video_input = tf.keras.Input(shape=video_shape)
+audio_input = tf.keras.Input(shape=audio_shape)
+text_input = tf.keras.Input(shape=text_shape)
 
 
+# Instantiate the UnifiedFusion model
+univatt = vatt_models.AudioTextVideoFusion()
 
-# output = model(inputs, training = False)
-# print(output)
-# # input_data = tf.keras.Input(shape = )
-# # print(model.summary())
+# Pass the input tensors through the UnifiedFusion model
+outputs = univatt(video=video_input, audio=audio_input, word_ids=text_input)
 
+# Create the functional model
+model = tf.keras.Model(inputs=[video_input, audio_input, text_input], outputs=outputs)
+
+print(model)
