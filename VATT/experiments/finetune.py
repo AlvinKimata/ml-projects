@@ -9,6 +9,7 @@ from data import processing
 from experiments import base
 from models.audio import factory as aud_factory
 from models.video import factory as vid_factory
+from models import multimodal as mm_factory
 from utils.eval import measures
 from utils.train import optimizers
 from utils.train import restore
@@ -38,9 +39,9 @@ class BaseExecutor(base.Executor):
     self._manual_restore = True
 
   def prepare_inputs(self, inputs):
-    if self.params.mode == 'train':
+    if self.params['mode'] == 'train':
       return self.prepare_train_inputs(inputs)
-    elif self.params.mode == 'eval':
+    elif self.params['mode'] == 'eval':
       return self.prepare_eval_inputs(inputs)
     else:
       raise ValueError('Invalid mode!')
@@ -53,9 +54,9 @@ class BaseExecutor(base.Executor):
 
   def construct_data(self, params):
 
-    if params.mode == 'train':
-      dataset_id = params.train.input.name
-      is_aud_cls = params.train.input.name in dataloaders.AUD_CLS_DS
+    if params['mode'] == 'train':
+      dataset_id = params['train']['input']['name']
+      is_aud_cls = params['train']['input']['name'] in dataloaders.AUD_CLS_DS
       if is_aud_cls:
         data = dataloaders.AudioFineTuneLoader(
             dataset_id=dataset_id,
@@ -67,9 +68,9 @@ class BaseExecutor(base.Executor):
             params=params,
             )
 
-    elif params.mode == 'eval':
-      dataset_id = params.eval.input.name
-      is_aud_cls = params.eval.input.name in dataloaders.AUD_CLS_DS
+    elif params['mode'] == 'eval':
+      dataset_id = params['eval']['input']['name']
+      is_aud_cls = params['eval']['input']['name'] in dataloaders.AUD_CLS_DS
       if is_aud_cls:
         data = dataloaders.AudioEvalLoader(
             dataset_id=dataset_id,
@@ -89,8 +90,8 @@ class BaseExecutor(base.Executor):
   def create_replicated_train_step(self, strategy, model):
     metrics = self.metrics
     optimizer = model.optimizer
-    gradient_clip_norm = self.params.train.gradient_clip_norm
-    gradient_clip_norm_cls = self.params.train.gradient_clip_norm_cls
+    gradient_clip_norm = self.params['train']['gradient_clip_norm']
+    gradient_clip_norm_cls = self.params['train']['gradient_clip_norm_cls']
 
     weights_backbone = []
     weights_cls = []
@@ -148,7 +149,7 @@ class BaseExecutor(base.Executor):
   def partial_restore(self, params, model):
     """Restore backbone weights from pretrained model checkpoint."""
 
-    ckpt_path = params.checkpoint_path
+    ckpt_path = params['checkpoint_path']
     if ckpt_path is None:
       logging.info('No pretrained checkpoint provided, '
                    'training with randomly initialized weights.')
@@ -208,24 +209,24 @@ class BaseExecutor(base.Executor):
       inputs = {'images': tf.keras.Input(shape=input_shape)}
       model_factory = vid_factory
 
-    model = model_factory.build_model(params=params.model_config,
+    model = model_factory.build_model(params=params['model_config'],
                                       override_params=model_kwargs,
                                       mode='predict')
     outputs = model(inputs, None)
     keras_model = tf.keras.Model(inputs=inputs, outputs=outputs)
     keras_model.loss_fn = model.loss_fn
 
-    if params.mode == 'train':
+    if params['mode'] == 'train':
       self.partial_restore(params, keras_model)
 
     logging.info('Number of parameters in model: %f M.',
                  keras_model.count_params() / 10.**6)
 
     learning_rate = schedules.get_learning_rate(
-        params.train.optimizer.learning_rate
+        params['train']['optimizer']['learning_rate']
         )
     keras_model.optimizer = optimizers.get_optimizer(
-        learning_rate, params.train.optimizer
+        learning_rate, params['train']['optimizer']
         )
     return keras_model
 
@@ -235,15 +236,15 @@ class VisionExecutor(BaseExecutor):
 
   def prepare_train_inputs(self, inputs):
     """Prepares inputs on device to be fed to model in train mode."""
-    params = self.params.train.input
+    params = self.params['train']['input']
 
     images = inputs[FeatureNames.VISION]
     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
 
-    if params.linearize_vision:
-      img_shape = [params.frame_size, params.frame_size, 3]
-      if params.name in dataloaders.VID_CLS_DS:
-        space_to_depth = params.space_to_depth
+    if params['linearize_vision']:
+      img_shape = [params['frame_size'], params['frame_size'], 3]
+      if params['name'] in dataloaders.VID_CLS_DS:
+        space_to_depth = params['space_to_depth']
         img_shape = processing.get_video_shape(
             params, is_space_to_depth=space_to_depth)
       else:
@@ -252,8 +253,8 @@ class VisionExecutor(BaseExecutor):
       img_shape = [-1] + img_shape
       images = tf.reshape(images, img_shape)
 
-    if params.name in dataloaders.IMG_CLS_DS:
-      num_replica = self.params.model_config.temporal_patch_size
+    if params['name'] in dataloaders.IMG_CLS_DS:
+      num_replica = self.params['model_config']['temporal_patch_size']
       images = tf.tile(images, [1, num_replica, 1, 1, 1])
 
     labels = {'one_hot': labels_onehot}
@@ -263,14 +264,14 @@ class VisionExecutor(BaseExecutor):
 
   def prepare_eval_inputs(self, inputs):
     """Prepares inputs on device to be fed to model in eval mode."""
-    params = self.params.eval.input
+    params = self.params['eval']['input']
     images = inputs[FeatureNames.VISION]
     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
 
-    if params.linearize_vision:
-      img_shape = [params.frame_size, params.frame_size, 3]
-      if params.name in dataloaders.VID_CLS_DS:
-        space_to_depth = params.space_to_depth
+    if params['linearize_vision']:
+      img_shape = [params['frame_size'], params['frame_size'], 3]
+      if params['name'] in dataloaders.VID_CLS_DS:
+        space_to_depth = params['space_to_depth']
         img_shape = processing.get_video_shape(
             params, is_space_to_depth=space_to_depth)
       else:
@@ -279,8 +280,8 @@ class VisionExecutor(BaseExecutor):
       img_shape = [-1] + img_shape
       images = tf.reshape(images, img_shape)
 
-    if params.name in dataloaders.IMG_CLS_DS:
-      num_replica = self.params.model_config.temporal_patch_size
+    if params['name'] in dataloaders.IMG_CLS_DS:
+      num_replica = self.params['model_config']['temporal_patch_size']
       images = tf.tile(images, [1, num_replica, 1, 1, 1])
 
     labels = {'one_hot': labels_onehot}
@@ -301,12 +302,13 @@ class AudioExecutor(BaseExecutor):
   def prepare_train_inputs(self, inputs):
     """Prepares inputs on device to be fed to model in train mode."""
 
-    params = self.params.train.input
+    params = self.params['train']['input']
 
-    if params.raw_audio:
-      audio = inputs[FeatureNames.AUDIO][:, :, None]
+    if params['raw_audio']:
+      audio = inputs[FeatureNames.AUDIO][tf.newaxis, ...]
+      print(f"AUdio shape is: {audio.shape}")
     else:
-      audio = inputs[FeatureNames.AUDIO_MEL]
+      audio = inputs[FeatureNames.AUDIO_MEL][tf.newaxis, ...]
 
     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
 
@@ -318,10 +320,10 @@ class AudioExecutor(BaseExecutor):
   def prepare_eval_inputs(self, inputs):
     """Prepares inputs on device to be fed to model in eval mode."""
 
-    params = self.params.eval.input
+    params = self.params['eval']['input']
 
-    if params.raw_audio:
-      audio = inputs[FeatureNames.AUDIO][:, :, None]
+    if params['raw_audio']:
+      audio = inputs[FeatureNames.AUDIO][tf.newaxis, ...]
     else:
       audio = inputs[FeatureNames.AUDIO_MEL]
     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
@@ -377,10 +379,10 @@ class AudioVisionExecutor(BaseExecutor):
     images = inputs[FeatureNames.VISION]
     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
 
-    if vision_params.linearize_vision:
-      img_shape = [vision_params.frame_size, vision_params.frame_size, 3]
-      if vision_params.name in dataloaders.VID_CLS_DS:
-        space_to_depth = vision_params.space_to_depth
+    if vision_params['linearize_vision']:
+      img_shape = [vision_params['frame_size'], vision_params['frame_size'], 3]
+      if vision_params['name'] in dataloaders.VID_CLS_DS:
+        space_to_depth = vision_params['space_to_depth']
         img_shape = processing.get_video_shape(
             vision_params, is_space_to_depth=space_to_depth)
       else:
@@ -389,11 +391,11 @@ class AudioVisionExecutor(BaseExecutor):
       img_shape = [-1] + img_shape
       images = tf.reshape(images, img_shape)
 
-    if vision_params.name in dataloaders.IMG_CLS_DS:
-      num_replica = self.params.model_config.temporal_patch_size
+    if vision_params['name'] in dataloaders.IMG_CLS_DS:
+      num_replica = self.params['model_config']['temporal_patch_size']
       images = tf.tile(images, [1, num_replica, 1, 1, 1])
 
-    if audio_params.raw_audio:
+    if audio_params['raw_audio']:
       audio = inputs[FeatureNames.AUDIO][:, :, None]
     else:
       audio = inputs[FeatureNames.AUDIO_MEL]
@@ -406,16 +408,16 @@ class AudioVisionExecutor(BaseExecutor):
   def prepare_eval_inputs(self, inputs):
     """Prepares inputs on device to be fed to model in eval mode."""
 
-    vision_params = self.params.eval.input
-    audio_params = self.params.eval.audio_input
+    vision_params = self.params['eval']['input']
+    audio_params = self.params['eval']['audio_input']
 
     images = inputs[FeatureNames.VISION]
     labels_onehot = inputs[FeatureNames.LABEL_INDEX]
 
-    if vision_params.linearize_vision:
-      img_shape = [vision_params.frame_size, vision_params.frame_size, 3]
-      if vision_params.name in dataloaders.VID_CLS_DS:
-        space_to_depth = vision_params.space_to_depth
+    if vision_params['linearize_vision']:
+      img_shape = [vision_params['frame_size'], vision_params['frame_size'], 3]
+      if vision_params['name'] in dataloaders.VID_CLS_DS:
+        space_to_depth = vision_params['space_to_depth']
         img_shape = processing.get_video_shape(
             vision_params, is_space_to_depth=space_to_depth)
       else:
@@ -424,11 +426,11 @@ class AudioVisionExecutor(BaseExecutor):
       img_shape = [-1] + img_shape
       images = tf.reshape(images, img_shape)
 
-    if vision_params.name in dataloaders.IMG_CLS_DS:
-      num_replica = self.params.model_config.temporal_patch_size
+    if vision_params['name'] in dataloaders.IMG_CLS_DS:
+      num_replica = self.params['model_config']['temporal_patch_size']
       images = tf.tile(images, [1, num_replica, 1, 1, 1])
 
-    if audio_params.raw_audio:
+    if audio_params['raw_audio']:
       audio = inputs[FeatureNames.AUDIO][:, :, None]
     else:
       audio = inputs[FeatureNames.AUDIO_MEL]
@@ -477,10 +479,11 @@ def get_executor(params):
   is_aud_cls = input_params['name'] in dataloaders.AUD_CLS_DS
   is_vid_cls = input_params['name'] in dataloaders.VID_CLS_DS
   is_aud_vid_cls = input_params['name'] in dataloaders.AUD_VID_CLS_DS
-  if is_aud_cls:
-    return AudioExecutor(params=params)
-  elif is_vid_cls:
-    return VisionExecutor(params=params)
-  else:
-    return AudioVisionExecutor(params = params)
-
+  # if is_aud_cls:
+  #   return AudioExecutor(params=params)
+  # elif is_vid_cls:
+  #   return VisionExecutor(params=params)
+  # else:
+  #   return AudioVisionExecutor(params = params)
+  # return AudioVisionExecutor(params = params)
+  return AudioExecutor(params=params)

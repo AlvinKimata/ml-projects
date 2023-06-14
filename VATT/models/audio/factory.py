@@ -57,14 +57,14 @@ class AudioModel(tf.keras.Model):
     """AudioModel."""
 
     super(AudioModel, self).__init__(name='audio_module')
-    self._model_name = params.name
-    self._freeze_backbone = params.freeze_backbone
-    self._dropout_rate = params.cls_dropout_rate
-    self._final_endpoint = params.final_endpoint
-    self._num_classes = params.num_classes
+    self._model_name = 'resnet2d'
+    self._freeze_backbone = True
+    self._dropout_rate = 0.3
+    self._final_endpoint = 'last_conv'
+    self._num_classes = 2
     self._ops = collections.OrderedDict()
 
-    base_kwargs = params.as_dict()
+    base_kwargs = params
     self._base = base_model(**base_kwargs)
 
     if self._freeze_backbone:
@@ -136,8 +136,10 @@ class AudioModel(tf.keras.Model):
     """
     if isinstance(inputs, dict):
       data = inputs['audio']
+      print(f"Audio input shape is; {data.shape} \n audio_data is: {data}")
     else:
       data = inputs
+      print(f"Audio input shape is; {data.shape} \n audio_data is: {data}")
 
     # for dropout and batch_norm. Especially for fuse logits layers.
     features_pooled, end_points = self._base(data, training=training)
@@ -177,27 +179,27 @@ def build_model(
   if params is None:
     assert backbone is not None, 'either params or backbone should be specified'
     params = configs_factory.build_model_configs(backbone)
+    print(f"Audio params are: {params}")
 
-  if override_params is not None:
-    params.override(override_params)
+  # if override_params is not None:
+  #   params.override(override_params)
 
-  model_name = params.name.lower()
-  print(f"Model name parameters are; {model_name}")
-  if model_name.startswith('resnet'):
-    base_model = resnet2d.Resnet2dBase
-  elif model_name.startswith('wat'):
-    base_model = autx1d.AuTx1D
-  elif model_name.startswith('spt'):
-    base_model = autx2d.AuTx2D
-  else:
-    raise ValueError('Unknown model name {!r}'.format(params.name))
+  # model_name = params['name'].lower()
+  # if model_name.startswith('resnet'):
+  base_model = resnet2d.Resnet2dBase
+  # elif model_name.startswith('wat'):
+  #   base_model = autx1d.AuTx1D
+  # elif model_name.startswith('spt'):
+  #   base_model = autx2d.AuTx2D
+  # else:
+  #   raise ValueError('Unknown model name {!r}'.format(params.name))
 
-  if mode == 'predict':
-    pred_aggregator = PredictionAggregator(
-        num_test_clips=params.num_test_samples
-        )
-  else:
-    pred_aggregator = None
+  # if mode == 'predict':
+  #   pred_aggregator = PredictionAggregator(
+  #       num_test_clips=params['num_test_samples']
+  #       )
+  # else:
+  pred_aggregator = None
 
   model = AudioModel(
       base_model=base_model,
@@ -205,6 +207,9 @@ def build_model(
       pred_aggregator=pred_aggregator
       )
 
-  logging.info('Audio model %s created successfully.', params.name)
+  logging.info('Audio model created successfully.')
+
+  for layer in model.layers:
+    print(layer)
 
   return model

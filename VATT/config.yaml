@@ -66,7 +66,7 @@ model_config:
       vid_aud_weight: 1.0
       vid_txt_weight: 1.0
   model_name: uvatt_mlp_fac
-model_dir: 'vatt/pretrained_ckpt'
+model_dir: None
 strategy_config:
   distribution_strategy: mirrored
   tpu: null
@@ -75,6 +75,7 @@ train:
   gradient_clip_norm: 0.75
   gradient_clip_norm_cls: 0.0
   input:
+    video_stride: 2
     audio_noise: 0.0
     audio_stride: 2
     batch_size: 8
@@ -103,3 +104,4 @@ train:
     stft_length: 0.04267
     stft_step: 0.02134
     text_tokenizer: WordTokenizer
+    zero_centering_image: true

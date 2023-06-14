@@ -95,6 +95,7 @@ class MMRLModel(tf.keras.Model):
     audio_inputs = inputs['audio']
     text_inputs = inputs['text']
 
+
     features = self._base_layer(
         video=video_inputs,
         audio=audio_inputs,

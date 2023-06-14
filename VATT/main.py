@@ -6,7 +6,7 @@ from absl import flags
 from absl import logging
 from experiments import finetune
 from models import model_factory
-# from configs import factory as config_factory
+from configs import factory as config_factory
 
 
 with open('config.yaml', 'r') as f:
@@ -15,15 +15,17 @@ with open('config.yaml', 'r') as f:
 uvatt = model_factory.build_model(params = configurations)
 
 
-
+FLAGS = flags.FLAGS
 
 def get_params():
     """Constructs the configuration of the experiment"""
     params = configurations
-#     # params = config_factory.build_experiment_configs(
-#     #     task = task,
-#     #     model_arch = model_arch
-#     # )
+    # task = 'finetune'
+    # model_arch = 'UT_BASE'
+    # params = config_factory.build_experiment_configs(
+    #     task = task,
+    #     model_arch = model_arch
+    # )
     return params
 
 def main(argv):

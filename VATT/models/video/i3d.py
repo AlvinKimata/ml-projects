@@ -1,6 +1,6 @@
 """Model defination for the I3D Video Model."""
-
 import functools
+import collections
 import tensorflow as tf
 
 
@@ -290,7 +290,7 @@ class VideoModel(tf.keras.Model):
 
   def __init__(self,
                base_model,
-               params,
+              #  params,
                pred_aggregator = None):
     """VideoModel."""
 
@@ -303,14 +303,15 @@ class VideoModel(tf.keras.Model):
     self._num_classes = 2
     self._ops = collections.OrderedDict()
 
-    base_kwargs = params.as_dict()
-    if 'backbone_config' in base_kwargs:
-      base_kwargs['backbone_config'] = params.backbone_config
+    # # base_kwargs = params.as_dict()
+    # base_kwargs = params
+    # if 'backbone_config' in base_kwargs:
+    #   base_kwargs['backbone_config'] = params['backbone_config']
 
-    self._base = base_model(**base_kwargs)
+    self._base = base_model()
 
-    if self._freeze_backbone:
-      self._base.trainable = False
+    # if self._freeze_backbone:
+    #   self._base.trainable = False
 
     if self._num_classes is not None:
       self._ops['dropout'] = tf.keras.layers.Dropout(rate=self._dropout_rate)

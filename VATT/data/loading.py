@@ -92,7 +92,7 @@ class BaseLoader(object):
     self.dmvr_factory = [
         dmvr_factory
     ] if not isinstance(dmvr_factory, list) else dmvr_factory
-    self.batch_size = params.batch_size
+    self.batch_size = params['batch_size']
     self.num_epochs = num_epochs
     self.postprocess_fns = postprocess_fns
     self.shuffle = mode == "train"

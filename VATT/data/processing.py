@@ -11,7 +11,7 @@ import tensorflow as tf
 import tensorflow_probability as tfp
 
 
-_VOCAB_BASE_DIR = 'vatt/misc'
+_VOCAB_BASE_DIR = 'misc\\'
 
 
 def get_vocab_path(vocab = "howto100m_en"):
@@ -411,18 +411,18 @@ def get_audio_shape(params, fps, sr):
   """Calculate exact audio input shape given input parameters."""
   # check if it is video-text-only setting
   # pass [1, 1] to avoid unnecessary TPU occupation
-  if params.split == "train":
-    if params.name == "howto100m" and not params.use_howto100m_audio:
+  if params['split'] == "train":
+    if params['name'] == "howto100m" and not params['use_howto100m_audio']:
       return [1, 1]
 
-  n_audio_secs = params.num_frames / fps
+  n_audio_secs = params['num_frames'] / fps
   n_waveform_samples = int(n_audio_secs * sr)
-  if params.raw_audio:
+  if params['raw_audio']:
     audio_shape = [n_waveform_samples, 1]
   else:
-    n_stft_steps = int(params.stft_step * sr)
+    n_stft_steps = int(params['stft_step'] * sr)
     n_stft_samples = int(n_waveform_samples / n_stft_steps)
-    audio_shape = [n_stft_samples, params.mel_bins, 1]
+    audio_shape = [n_stft_samples, params['mel_bins'], 1]
 
   return audio_shape
 
@@ -430,14 +430,14 @@ def get_audio_shape(params, fps, sr):
 def get_video_shape(params, is_space_to_depth=False):
   """Returns exact video shape as model's input."""
   if is_space_to_depth:
-    video_shape = [params.num_frames // 2,
-                   params.frame_size // 2,
-                   params.frame_size // 2,
+    video_shape = [params['num_frames'] // 2,
+                   params['frame_size'] // 2,
+                   params['frame_size'] // 2,
                    24]
   else:
-    video_shape = [params.num_frames,
-                   params.frame_size,
-                   params.frame_size,
+    video_shape = [params['num_frames'],
+                   params['frame_size'],
+                   params['frame_size'],
                    3]
   return video_shape
 
