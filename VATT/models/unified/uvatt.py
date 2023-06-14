@@ -316,11 +316,12 @@ class UniversalVATT(tf.keras.layers.Layer):
     outputs = {}
 
     for modality in ["video", "audio", "text"]:
-      modality_inputs = inputs[modality]["data"]
-      modality_attn_mask = inputs[modality].get("attention_mask", None)
+      modality_inputs = inputs[modality]
+    #   modality_attn_mask = modality_inputs.get('attention_mask')
+
       outputs[modality] = self._modality_call(inputs=modality_inputs,
                                               modality=modality,
                                               training=training,
-                                              attention_mask=modality_attn_mask)
+                                              attention_mask=None)
 
     return outputs

@@ -29,13 +29,13 @@ class UnifiedModule(tf.keras.Model):
       params: Hyperparameters of the model.
     """
     super(UnifiedModule, self).__init__(name="unified_module")
-    self._model_name = params.name
-    self._dropout_rate = params.cls_dropout_rate
-    self._modality = params.modality
-    self._num_classes = params.num_classes
+    self._model_name = 'UniversalVATT'
+    self._dropout_rate = 0.3
+    self._modality = 'video'
+    self._num_classes = 2
     self._ops = collections.OrderedDict()
 
-    self.unified_transformer = base_model(**params.as_dict())
+    self.unified_transformer = base_model(**params)
 
     if self._num_classes is not None:
       self._ops["dropout"] = tf.keras.layers.Dropout(rate=self._dropout_rate)

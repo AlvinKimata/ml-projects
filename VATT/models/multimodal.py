@@ -9,6 +9,7 @@ from models.text import factory as txt_factory
 from models.text import bert_text as bert_backbone
 from models.unified import uvatt as universal_transformer
 from models.unified import factory as uvatt_factory
+from models.video import i3d
 
 
 
@@ -56,11 +57,12 @@ class AudioTextVideoFusion(tf.keras.layers.Layer):
     # Defining all modules
     # first define backbones
 
-    self.vid_backbone = vid_factory.build_model(
-        backbone=self._video_backbone,
-        override_params=self._video_model_kwargs,
-        mode="embedding",
-        )
+    self._video_backbone = vid_factory.VideoModel(base_model = i3d.InceptionI3D)
+    # self.vid_backbone = vid_factory.build_model(
+    #     backbone=self._video_backbone,
+    #     override_params=self._video_model_kwargs,
+    #     mode="embedding",
+    #     )
     self.aud_backbone = aud_factory.build_model(
         backbone=self._audio_backbone,
         override_params=self._audio_model_kwargs
@@ -159,12 +161,11 @@ class UnifiedFusion(tf.keras.layers.Layer):
     # Audio parameters.
     self._unified_backbone = unified_backbone
     self._unified_model_kwargs = unified_model_kwargs or {}
-
-    self.unified_backbone = universal_transformer.UniversalVATT()
-    # self.unified_backbone = uvatt_factory.build_model(
-    #     backbone=self._unified_backbone,
-    #     override_params=self._unified_model_kwargs,
-    #     )
+  
+    self.unified_backbone = uvatt_factory.build_model(
+        backbone=self._unified_backbone,
+        override_params=self._unified_model_kwargs,
+        )
 
   def call(self,
            video,

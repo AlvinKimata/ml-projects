@@ -57,11 +57,11 @@ class VideoModel(tf.keras.Model):
     """VideoModel."""
 
     super(VideoModel, self).__init__(name='video_module')
-    self._model_name = params.name
-    self._freeze_backbone = params.freeze_backbone
-    self._dropout_rate = params.cls_dropout_rate
-    self._final_endpoint = params.final_endpoint
-    self._num_classes = params.num_classes
+    self._model_name = params['name']
+    self._freeze_backbone = params['freeze_backbone']
+    self._dropout_rate = params['cls_dropout_rate']
+    self._final_endpoint = params['final_endpoint']
+    self._num_classes = params['num_classes']
     self._ops = collections.OrderedDict()
 
     base_kwargs = params.as_dict()
