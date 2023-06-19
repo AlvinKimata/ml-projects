@@ -10,6 +10,8 @@ from utils.logger import create_logger
 import os
 import tensorflow as tf
 
+os.environ['CUDA_VISIBLE_DEVICES'] ='1'
+
 def get_args(parser):
     parser.add_argument("--batch_sz", type=int, default=128)
     parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeav*")
