@@ -139,8 +139,6 @@ class ETMC(TMC):
         rgb = torch.flatten(rgb, start_dim=1)
 
         depth_out = spec
-        print(depth_out.shape, rgb.shape)
-
         for layer in self.spec_depth:
             depth_out = layer(depth_out)
 
