@@ -70,24 +70,16 @@ def get_scheduler(optimizer, args):
     )
 
 
+
 def model_forward(i_epoch, model, args, ce_loss, batch):
     rgb, spec, tgt = batch['video_reshaped'], batch['spectrogram'], batch['label_map']
-    # rgb = np.random.randn(1, 3, 256, 256)
     rgb_pt = torch.Tensor(rgb.numpy())
-    # spec = np.random.randn(95697, )
     spec = spec.numpy()
     spec_pt = torch.unsqueeze(torch.Tensor(spec), dim = 0)
-    tgt = torch.Tensor(tgt.numpy())
+    tgt_pt = torch.Tensor(tgt.numpy())
 
     if torch.cuda.is_available():
-        rgb, depth, tgt = rgb.cuda(), depth.cuda(), tgt.cuda()
-        
-    depth_alpha, rgb_alpha, depth_rgb_alpha = model(rgb_pt, spec_pt)
-
-    loss = ce_loss(tgt, depth_alpha, args.n_classes, i_epoch, args.annealing_epoch) + \
-           ce_loss(tgt, rgb_alpha, args.n_classes, i_epoch, args.annealing_epoch) + \
-           ce_loss(tgt, depth_rgb_alpha, args.n_classes, i_epoch, args.annealing_epoch)
-    return loss, depth_alpha, rgb_alpha, depth_rgb_alpha, tgt
+        rgb_pt, spec_pt, tgt_pt = rgb_pt.cuda(), spec_pt.cuda(), tgt_pt.cuda()
 
 
 def model_eval(i_epoch, data, model, args, criterion):
