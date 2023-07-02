@@ -12,10 +12,24 @@ import tensorflow as tf
 
 os.environ['CUDA_VISIBLE_DEVICES'] ='1'
 
+
+# Define the audio_args dictionary
+audio_args = {
+    'nb_samp': 64600,
+    'first_conv': 1024,
+    'in_channels': 1,
+    'filts': [20, [20, 20], [20, 128], [128, 128]],
+    'blocks': [2, 4],
+    'nb_fc_node': 1024,
+    'gru_node': 1024,
+    'nb_gru_layer': 3,
+}
+
+
 def get_args(parser):
     parser.add_argument("--batch_sz", type=int, default=128)
-    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeav*")
-    parser.add_argument("--val_data_path", type=str, default="datasets/val/fakeav*")
+    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeavceleb_1k*")
+    parser.add_argument("--val_data_path", type=str, default="datasets/val/fakeavceleb_1k*")
     parser.add_argument("--LOAD_SIZE", type=int, default=256)
     parser.add_argument("--FINE_SIZE", type=int, default=224)
     parser.add_argument("--dropout", type=float, default=0.1)
@@ -37,6 +51,12 @@ def get_args(parser):
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--n_classes", type=int, default=2)
     parser.add_argument("--annealing_epoch", type=int, default=10)
+    parser.add_argument("--device", type=str, default=torch.device('cpu'))
+
+    for key, value in audio_args.items():
+        parser.add_argument(f"--{key}", type=type(value), default=value)
+
+
 
 
 def get_optimizer(model, args):
@@ -51,18 +71,21 @@ def get_scheduler(optimizer, args):
 
 
 def model_forward(i_epoch, model, args, ce_loss, batch):
-    rgb, depth, tgt = batch['video_reshaped'], batch['video_reshaped'], batch['label_map']
-    rgb = torch.Tensor(rgb.numpy())
-    depth = torch.Tensor(depth.numpy())
+    rgb, spec, tgt = batch['video_reshaped'], batch['spectrogram'], batch['label_map']
+    # rgb = np.random.randn(1, 3, 256, 256)
+    rgb_pt = torch.Tensor(rgb.numpy())
+    # spec = np.random.randn(95697, )
+    spec = spec.numpy()
+    spec_pt = torch.unsqueeze(torch.Tensor(spec), dim = 0)
     tgt = torch.Tensor(tgt.numpy())
 
     if torch.cuda.is_available():
         rgb, depth, tgt = rgb.cuda(), depth.cuda(), tgt.cuda()
-    depth_alpha, rgb_alpha, pseudo_alpha, depth_rgb_alpha = model(rgb, depth)
+        
+    depth_alpha, rgb_alpha, depth_rgb_alpha = model(rgb_pt, spec_pt)
 
     loss = ce_loss(tgt, depth_alpha, args.n_classes, i_epoch, args.annealing_epoch) + \
            ce_loss(tgt, rgb_alpha, args.n_classes, i_epoch, args.annealing_epoch) + \
-           ce_loss(tgt, pseudo_alpha, args.n_classes, i_epoch, args.annealing_epoch) + \
            ce_loss(tgt, depth_rgb_alpha, args.n_classes, i_epoch, args.annealing_epoch)
     return loss, depth_alpha, rgb_alpha, depth_rgb_alpha, tgt
 
@@ -113,29 +136,44 @@ def train(args):
     optimizer = get_optimizer(model, args)
     scheduler = get_scheduler(optimizer, args)
     logger = create_logger("%s/logfile.log" % args.savedir, args)
-    # model.cuda()
+    if torch.cuda.is_available():
+        model.cuda()
 
     torch.save(args, os.path.join(args.savedir, "args.pt"))
     start_epoch, global_step, n_no_improve, best_metric = 0, 0, 0, -np.inf
 
-    if os.path.exists(os.path.join(args.savedir, "checkpoint.pt")):
-        checkpoint = torch.load(os.path.join(args.savedir, "checkpoint.pt"))
-        start_epoch = checkpoint["epoch"]
-        n_no_improve = checkpoint["n_no_improve"]
-        best_metric = checkpoint["best_metric"]
-        model.load_state_dict(checkpoint["state_dict"])
-        optimizer.load_state_dict(checkpoint["optimizer"])
-        scheduler.load_state_dict(checkpoint["scheduler"])
+    # if os.path.exists(os.path.join(args.savedir, "checkpoint.pt")):
+    #     checkpoint = torch.load(os.path.join(args.savedir, "checkpoint.pt"))
+    #     start_epoch = checkpoint["epoch"]
+    #     n_no_improve = checkpoint["n_no_improve"]
+    #     best_metric = checkpoint["best_metric"]
+    #     model.load_state_dict(checkpoint["state_dict"])
+    #     optimizer.load_state_dict(checkpoint["optimizer"])
+    #     scheduler.load_state_dict(checkpoint["scheduler"])
 
     for i_epoch in range(start_epoch, args.max_epochs):
         train_losses = []
         model.train()
         optimizer.zero_grad()
-        for batch in tqdm(train_ds, total  = 250):
+        # for batch in tqdm(range(10), total  = 10):
+        #     loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
+        #     if args.gradient_accumulation_steps > 1:
+        #         loss = loss / args.gradient_accumulation_steps
+
+        #     train_losses.append(loss.item())
+        #     loss.backward()
+        #     print(f"Loss is: {loss}")
+        #     global_step += 1
+        #     if global_step % args.gradient_accumulation_steps == 0:
+        #         optimizer.step()
+        #         optimizer.zero_grad()
+
+        for batch in tqdm(train_ds, total  = 750):
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps
 
+            print(f"Loss is: {loss}")
             train_losses.append(loss.item())
             loss.backward()
             global_step += 1
