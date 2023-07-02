@@ -199,7 +199,6 @@ class RawNet(nn.Module):
         
         nb_samp = x.shape[0]
         len_seq = x.shape[1]
-        print(nb_samp, len_seq)
         x=x.view(nb_samp,1,len_seq)
         
         x = self.Sinc_conv(x)    
