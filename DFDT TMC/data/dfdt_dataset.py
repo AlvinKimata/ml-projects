@@ -31,7 +31,7 @@ def decode_inputs(video, spectrogram, label_map):
 
     frame = tf.reshape(video, [10, 3, 256, 256])
     frame = frame[0] #Pick the first frame.
-    frame = tf.expand_dims(frame, axis = 0)
+    # frame = tf.expand_dims(frame, axis = 0)
 
     label_map = tf.expand_dims(label_map, axis = 0)
     # label_map =  tf.one_hot(label_map, depth = 2)
@@ -53,10 +53,11 @@ class FakeAVCelebDataset:
 
         shards = tf.data.Dataset.from_tensor_slices(files)
         dataset = shards.interleave(tf.data.TFRecordDataset)
-        dataset = dataset.shuffle(buffer_size=500)
+        dataset = dataset.shuffle(buffer_size=250)
 
         dataset = dataset.map(_parse_function, num_parallel_calls = tf.data.AUTOTUNE)
         dataset = dataset.map(decode_inputs, num_parallel_calls = tf.data.AUTOTUNE)
+        dataset = dataset.padded_batch(batch_size = 8)
 
         return dataset
     

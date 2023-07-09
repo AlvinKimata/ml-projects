@@ -1,0 +1,33 @@
+INFO - 07/09/23 15:03:12 - 0:00:00 - FINE_SIZE: 224
+                                     LOAD_SIZE: 256
+                                     annealing_epoch: 10
+                                     batch_sz: 128
+                                     blocks: [2, 4]
+                                     device: cpu
+                                     dropout: 0.1
+                                     filts: [20, [20, 20], [20, 128], [128, 128]]
+                                     first_conv: 1024
+                                     gradient_accumulation_steps: 3
+                                     gru_node: 1024
+                                     hidden: []
+                                     hidden_sz: 768
+                                     img_embed_pool_type: avg
+                                     img_hidden_sz: 512
+                                     in_channels: 1
+                                     include_bn: True
+                                     lr: 0.0001
+                                     lr_factor: 0.3
+                                     lr_patience: 10
+                                     max_epochs: 500
+                                     n_classes: 2
+                                     n_workers: 12
+                                     name: ReleasedVersion
+                                     nb_fc_node: 1024
+                                     nb_gru_layer: 3
+                                     nb_samp: 64600
+                                     num_image_embeds: 1
+                                     patience: 20
+                                     savedir: ./savepath/ETMC/nyud2/ReleasedVersion
+                                     seed: 1
+                                     train_data_path: datasets/train/fakeavceleb_1k*
+                                     val_data_path: datasets/val/fakeavceleb_1k*

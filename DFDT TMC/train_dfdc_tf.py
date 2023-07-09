@@ -75,7 +75,8 @@ def model_forward(i_epoch, model, args, ce_loss, batch):
     rgb, spec, tgt = batch['video_reshaped'], batch['spectrogram'], batch['label_map']
     rgb_pt = torch.Tensor(rgb.numpy())
     spec = spec.numpy()
-    spec_pt = torch.unsqueeze(torch.Tensor(spec), dim = 0)
+    spec_pt = torch.Tensor(spec)
+    # spec_pt = torch.unsqueeze(torch.Tensor(spec), dim = 0)
     tgt_pt = torch.Tensor(tgt.numpy())
 
     if torch.cuda.is_available():
@@ -154,20 +155,8 @@ def train(args):
         train_losses = []
         model.train()
         optimizer.zero_grad()
-        # for batch in tqdm(range(10), total  = 10):
-        #     loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
-        #     if args.gradient_accumulation_steps > 1:
-        #         loss = loss / args.gradient_accumulation_steps
 
-        #     train_losses.append(loss.item())
-        #     loss.backward()
-        #     print(f"Loss is: {loss}")
-        #     global_step += 1
-        #     if global_step % args.gradient_accumulation_steps == 0:
-        #         optimizer.step()
-        #         optimizer.zero_grad()
-
-        for batch in tqdm(train_ds, total  = 750):
+        for batch in tqdm(train_ds, total  = 250):
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps
