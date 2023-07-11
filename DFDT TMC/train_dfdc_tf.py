@@ -1,16 +1,20 @@
+import os
 import argparse
 from tqdm import tqdm
+import torch.nn as nn
+import tensorflow as tf
 import torch.optim as optim
-from sklearn.metrics import accuracy_score
+
 from models.TMC import ETMC, ce_loss
 import torchvision.transforms as transforms
 from data.dfdt_dataset import FakeAVCelebDataset
+
 from utils.utils import *
 from utils.logger import create_logger
-import os
-import tensorflow as tf
+from sklearn.metrics import accuracy_score
+from torch.utils.tensorboard import SummaryWriter
 
-os.environ['CUDA_VISIBLE_DEVICES'] ='1'
+os.environ['CUDA_VISIBLE_DEVICES'] ='0'
 
 
 # Define the audio_args dictionary
@@ -51,7 +55,7 @@ def get_args(parser):
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--n_classes", type=int, default=2)
     parser.add_argument("--annealing_epoch", type=int, default=10)
-    parser.add_argument("--device", type=str, default=torch.device('cpu'))
+    parser.add_argument("--device", type=str, default='cpu')
 
     for key, value in audio_args.items():
         parser.add_argument(f"--{key}", type=type(value), default=value)
@@ -120,6 +124,35 @@ def model_eval(i_epoch, data, model, args, criterion):
     metrics["depthrgb_acc"] = accuracy_score(tgts, depthrgb_preds)
     return metrics
 
+def weight_histograms_conv2d(writer, step, weights, layer_number):
+  weights_shape = weights.shape
+  num_kernels = weights_shape[0]
+  for k in range(num_kernels):
+    flattened_weights = weights[k].flatten()
+    tag = f"layer_{layer_number}/kernel_{k}"
+    writer.add_histogram(tag, flattened_weights, global_step=step, bins='tensorflow')
+
+
+def weight_histograms_linear(writer, step, weights, layer_number):
+  flattened_weights = weights.flatten()
+  tag = f"layer_{layer_number}"
+  writer.add_histogram(tag, flattened_weights, global_step=step, bins='tensorflow')
+
+
+def weight_histograms(writer, step, model):
+  print("Visualizing model weights...")
+  # Iterate over all model layers
+  model_layers = list(model.children())
+  for layer_number, layer in enumerate(model_layers):
+    # Get layer
+    # Compute weight histograms for appropriate layer
+    if isinstance(layer, nn.Conv2d):
+      weights = layer.weight
+      weight_histograms_conv2d(writer, step, weights, layer_number)
+    elif isinstance(layer, nn.Linear):
+      weights = layer.weight
+      weight_histograms_linear(writer, step, weights, layer_number)
+
 
 def train(args):
     set_seed(args.seed)
@@ -150,13 +183,16 @@ def train(args):
     #     model.load_state_dict(checkpoint["state_dict"])
     #     optimizer.load_state_dict(checkpoint["optimizer"])
     #     scheduler.load_state_dict(checkpoint["scheduler"])
+    writer = SummaryWriter()
 
     for i_epoch in range(start_epoch, args.max_epochs):
         train_losses = []
         model.train()
         optimizer.zero_grad()
 
-        for batch in tqdm(train_ds, total  = 250):
+        for index, batch in tqdm(enumerate(train_ds), total  = 250):
+            # Visualize weight histograms
+            weight_histograms(writer, index, model)
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps
