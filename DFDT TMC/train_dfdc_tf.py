@@ -32,7 +32,7 @@ audio_args = {
 
 def get_args(parser):
     parser.add_argument("--batch_sz", type=int, default=128)
-    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeavceleb_1k*")
+    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeavceleb*")
     parser.add_argument("--val_data_path", type=str, default="datasets/val/fakeavceleb_1k*")
     parser.add_argument("--LOAD_SIZE", type=int, default=256)
     parser.add_argument("--FINE_SIZE", type=int, default=224)
@@ -59,9 +59,6 @@ def get_args(parser):
 
     for key, value in audio_args.items():
         parser.add_argument(f"--{key}", type=type(value), default=value)
-
-
-
 
 def get_optimizer(model, args):
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
@@ -124,35 +121,17 @@ def model_eval(i_epoch, data, model, args, criterion):
     metrics["depthrgb_acc"] = accuracy_score(tgts, depthrgb_preds)
     return metrics
 
-def weight_histograms_conv2d(writer, step, weights, layer_number):
-  weights_shape = weights.shape
-  num_kernels = weights_shape[0]
-  for k in range(num_kernels):
-    flattened_weights = weights[k].flatten()
-    tag = f"layer_{layer_number}/kernel_{k}"
-    writer.add_histogram(tag, flattened_weights, global_step=step, bins='tensorflow')
+def write_weight_histograms(writer, step, model):
+    for idx, item in enumerate(model.named_parameters()):
+        name = item[0]
+        weights = item[1].data
+        if weights.size(dim = 0) > 2:
+            try:
+                writer.add_histogram(name, weights, idx)
+            except ValueError as e:
+                continue
 
-
-def weight_histograms_linear(writer, step, weights, layer_number):
-  flattened_weights = weights.flatten()
-  tag = f"layer_{layer_number}"
-  writer.add_histogram(tag, flattened_weights, global_step=step, bins='tensorflow')
-
-
-def weight_histograms(writer, step, model):
-  print("Visualizing model weights...")
-  # Iterate over all model layers
-  model_layers = list(model.children())
-  for layer_number, layer in enumerate(model_layers):
-    # Get layer
-    # Compute weight histograms for appropriate layer
-    if isinstance(layer, nn.Conv2d):
-      weights = layer.weight
-      weight_histograms_conv2d(writer, step, weights, layer_number)
-    elif isinstance(layer, nn.Linear):
-      weights = layer.weight
-      weight_histograms_linear(writer, step, weights, layer_number)
-
+writer = SummaryWriter()
 
 def train(args):
     set_seed(args.seed)
@@ -183,16 +162,13 @@ def train(args):
     #     model.load_state_dict(checkpoint["state_dict"])
     #     optimizer.load_state_dict(checkpoint["optimizer"])
     #     scheduler.load_state_dict(checkpoint["scheduler"])
-    writer = SummaryWriter()
 
     for i_epoch in range(start_epoch, args.max_epochs):
         train_losses = []
         model.train()
         optimizer.zero_grad()
 
-        for index, batch in tqdm(enumerate(train_ds), total  = 250):
-            # Visualize weight histograms
-            weight_histograms(writer, index, model)
+        for index, batch in tqdm(enumerate(train_ds), total  = 250):            
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps
@@ -204,6 +180,10 @@ def train(args):
             if global_step % args.gradient_accumulation_steps == 0:
                 optimizer.step()
                 optimizer.zero_grad()
+
+            write_weight_histograms(writer, index, model)
+
+    
 
         model.eval()
         metrics = model_eval(
@@ -242,7 +222,7 @@ def train(args):
         if n_no_improve >= args.patience:
             logger.info("No improvement. Breaking out of loop.")
             break
-
+    writer.close()
     load_checkpoint(model, os.path.join(args.savedir, "model_best.pt"))
     model.eval()
     test_metrics = model_eval(
