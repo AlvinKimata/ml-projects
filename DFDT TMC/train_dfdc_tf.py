@@ -1,16 +1,20 @@
+import os
 import argparse
 from tqdm import tqdm
+import torch.nn as nn
+import tensorflow as tf
 import torch.optim as optim
-from sklearn.metrics import accuracy_score
+
 from models.TMC import ETMC, ce_loss
 import torchvision.transforms as transforms
 from data.dfdt_dataset import FakeAVCelebDataset
+
 from utils.utils import *
 from utils.logger import create_logger
-import os
-import tensorflow as tf
+from sklearn.metrics import accuracy_score
+from torch.utils.tensorboard import SummaryWriter
 
-os.environ['CUDA_VISIBLE_DEVICES'] ='1'
+os.environ['CUDA_VISIBLE_DEVICES'] ='0'
 
 
 # Define the audio_args dictionary
@@ -28,7 +32,7 @@ audio_args = {
 
 def get_args(parser):
     parser.add_argument("--batch_sz", type=int, default=128)
-    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeavceleb_1k*")
+    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeavceleb*")
     parser.add_argument("--val_data_path", type=str, default="datasets/val/fakeavceleb_1k*")
     parser.add_argument("--LOAD_SIZE", type=int, default=256)
     parser.add_argument("--FINE_SIZE", type=int, default=224)
@@ -51,13 +55,10 @@ def get_args(parser):
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--n_classes", type=int, default=2)
     parser.add_argument("--annealing_epoch", type=int, default=10)
-    parser.add_argument("--device", type=str, default=torch.device('cpu'))
+    parser.add_argument("--device", type=str, default='cpu')
 
     for key, value in audio_args.items():
         parser.add_argument(f"--{key}", type=type(value), default=value)
-
-
-
 
 def get_optimizer(model, args):
     optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=1e-5)
@@ -120,6 +121,17 @@ def model_eval(i_epoch, data, model, args, criterion):
     metrics["depthrgb_acc"] = accuracy_score(tgts, depthrgb_preds)
     return metrics
 
+def write_weight_histograms(writer, step, model):
+    for idx, item in enumerate(model.named_parameters()):
+        name = item[0]
+        weights = item[1].data
+        if weights.size(dim = 0) > 2:
+            try:
+                writer.add_histogram(name, weights, idx)
+            except ValueError as e:
+                continue
+
+writer = SummaryWriter()
 
 def train(args):
     set_seed(args.seed)
@@ -156,7 +168,7 @@ def train(args):
         model.train()
         optimizer.zero_grad()
 
-        for batch in tqdm(train_ds, total  = 250):
+        for index, batch in tqdm(enumerate(train_ds), total  = 250):            
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps
@@ -168,6 +180,10 @@ def train(args):
             if global_step % args.gradient_accumulation_steps == 0:
                 optimizer.step()
                 optimizer.zero_grad()
+
+            write_weight_histograms(writer, index, model)
+
+    
 
         model.eval()
         metrics = model_eval(
@@ -206,7 +222,7 @@ def train(args):
         if n_no_improve >= args.patience:
             logger.info("No improvement. Breaking out of loop.")
             break
-
+    writer.close()
     load_checkpoint(model, os.path.join(args.savedir, "model_best.pt"))
     model.eval()
     test_metrics = model_eval(
