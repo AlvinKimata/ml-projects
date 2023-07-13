@@ -31,10 +31,8 @@ def decode_inputs(video, spectrogram, label_map):
 
     frame = tf.reshape(video, [10, 3, 256, 256])
     frame = frame[0] #Pick the first frame.
-    # frame = tf.expand_dims(frame, axis = 0)
 
     label_map = tf.expand_dims(label_map, axis = 0)
-    # label_map =  tf.one_hot(label_map, depth = 2)
     
     sample = {'video_reshaped': frame, 'spectrogram': spectrogram, 'label_map': label_map}
     return sample
@@ -48,12 +46,11 @@ class FakeAVCelebDataset:
     def load_features_from_tfrec(self):
         '''Loads raw features from a tfrecord file and returns them as raw inputs'''
         ds = tf.io.matching_files(self.data_dir)
-        # ds = tf.data.TFRecordDataset(self.data_dir)
         files = tf.random.shuffle(ds)
 
         shards = tf.data.Dataset.from_tensor_slices(files)
         dataset = shards.interleave(tf.data.TFRecordDataset)
-        dataset = dataset.shuffle(buffer_size=50)
+        dataset = dataset.shuffle(buffer_size=100)
 
         dataset = dataset.map(_parse_function, num_parallel_calls = tf.data.AUTOTUNE)
         dataset = dataset.map(decode_inputs, num_parallel_calls = tf.data.AUTOTUNE)
