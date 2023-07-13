@@ -86,8 +86,6 @@ class ImageEnc(nn.Module):
 class RawNet(nn.Module):
     def __init__(self, args):
         super(RawNet, self).__init__()
-        self.pretrained_rawnet = args.pretrained_rawnet
-
         
         self.device=args.device
         self.filts = [20, [20, 20], [20, 128], [128, 128]]
@@ -130,9 +128,22 @@ class RawNet(nn.Module):
        
         self.sig = nn.Sigmoid()
         self.logsoftmax = nn.LogSoftmax(dim=1)
-        
+        self.pretrained_rawnet = args.pretrained_rawnet
+        self.freeze_audio_encoder = args.freeze_audio_encoder
+
+        if self.pretrained_rawnet == True:
+            if self.freeze_audio_encoder:
+                ckpt = torch.load('pretrained/RawNet.pth', map_location = torch.device(self.device))
+                self.load_state_dict(ckpt, strict = False)
+                for param in self.parameters():
+                    param.requires_grad = False
+            else:
+                ckpt = torch.load('pretrained/RawNet.pth', map_location = torch.device(self.device))
+                self.load_state_dict(ckpt, strict = False)
+
+
     def forward(self, x, y = None):
-        
+
         nb_samp = x.shape[0]
         len_seq = x.shape[1]
         x=x.view(nb_samp,1,len_seq)
