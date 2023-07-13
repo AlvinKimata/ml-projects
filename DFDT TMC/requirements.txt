@@ -2,3 +2,5 @@ wget
 timm
 torch
 tensorflow
+moviepy
+librosa
