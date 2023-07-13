@@ -161,7 +161,7 @@ def main(argv):
 
     if FLAGS.shuffle_csv:
         # input_csv = input_csv.sample(frac=1)
-        input_csv = input_csv.groupby('label', group_keys = False).apply(lambda x: x.sample(2))
+        input_csv = input_csv.groupby('label', group_keys = False).apply(lambda x: x.sample(len(input_csv)))
     with _close_on_exit(writers) as writers:
         for row in input_csv.itertuples():
            index = row[0]

@@ -56,6 +56,10 @@ def get_args(parser):
     parser.add_argument("--n_classes", type=int, default=2)
     parser.add_argument("--annealing_epoch", type=int, default=10)
     parser.add_argument("--device", type=str, default='cpu')
+    parser.add_argument("--image_encoder_pretrain", type=bool, default = True)
+    parser.add_argument("--freeze_image_encoder", type=bool, default = True)
+    parser.add_argument("--pretrained_rawnet", type = bool, default=True)
+    parser.add_argument("--freeze_audio_encoder", type = bool, default = True)
 
     for key, value in audio_args.items():
         parser.add_argument(f"--{key}", type=type(value), default=value)
