@@ -160,12 +160,13 @@ def main(argv):
         l_map = None
 
     if FLAGS.shuffle_csv:
-        # input_csv = input_csv.sample(frac=1)
-        input_csv = input_csv.groupby('label', group_keys = False).apply(lambda x: x.sample(len(input_csv)))
+        input_csv = input_csv.sample(frac=1)
     with _close_on_exit(writers) as writers:
         for row in input_csv.itertuples():
            index = row[0]
            v = row[1]
+           if os.name == 'posix':
+            v = v.str.replace('\\', '/')
            l = row[2]
            print("Processing example %d of %d   (%d%%) \r" %(index, len(input_csv), index * 100 / len(input_csv)), end="")
            seq_ex = serialize_example(video_path = v, label_name = l,label_map = l_map)

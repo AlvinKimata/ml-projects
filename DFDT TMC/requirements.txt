@@ -4,3 +4,4 @@ torch
 tensorflow
 moviepy
 librosa
+ffmpeg
