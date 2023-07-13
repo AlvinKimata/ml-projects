@@ -22,7 +22,6 @@ def KL(alpha, c):
 def ce_loss(p, alpha, c, global_step, annealing_step):
     S = torch.sum(alpha, dim=1, keepdim=True)
     E = alpha - 1
-    # label = F.one_hot(p, num_classes=c)
     label = p
     A = torch.sum(label * (torch.digamma(S) - torch.digamma(alpha)), dim=1, keepdim=True)
 
@@ -36,10 +35,10 @@ class TMC(nn.Module):
     def __init__(self, args):
         super(TMC, self).__init__()
         self.args = args
-        self.rgbenc = image.ImageEnc(args)
+        self.rgbenc = image.ImageEncoder(args)
         self.specenc = image.RawNet(args)
         
-        spec_last_size = args.img_hidden_sz * 2
+        spec_last_size = args.img_hidden_sz * 1
         rgb_last_size = args.img_hidden_sz * args.num_image_embeds
         self.spec_depth = nn.ModuleList()
         self.clf_rgb = nn.ModuleList()
@@ -103,20 +102,20 @@ class TMC(nn.Module):
         rgb = self.rgbenc(rgb)
         rgb = torch.flatten(rgb, start_dim=1)
 
-        depth_out = spec
+        spec_out = spec
 
         for layer in self.spec_depth:
-            depth_out = layer(depth_out)
+            spec_out = layer(spec_out)
 
         rgb_out = rgb
 
         for layer in self.clf_rgb:
             rgb_out = layer(rgb_out)
 
-        depth_evidence, rgb_evidence = F.softplus(depth_out), F.softplus(rgb_out)
-        depth_alpha, rgb_alpha = depth_evidence+1, rgb_evidence+1
-        depth_rgb_alpha = self.DS_Combin_two(depth_alpha, rgb_alpha)
-        return depth_alpha, rgb_alpha, depth_rgb_alpha
+        spec_evidence, rgb_evidence = F.softplus(spec_out), F.softplus(rgb_out)
+        spec_alpha, rgb_alpha = spec_evidence+1, rgb_evidence+1
+        spec_rgb_alpha = self.DS_Combin_two(spec_alpha, rgb_alpha)
+        return spec_alpha, rgb_alpha, spec_rgb_alpha
 
 
 class ETMC(TMC):
@@ -134,21 +133,22 @@ class ETMC(TMC):
     def forward(self, rgb, spec):
         spec = self.specenc(spec)
         spec = torch.flatten(spec, start_dim=1)
+        print(f"SPec output is: {spec.shape}")
 
         rgb = self.rgbenc(rgb)
         rgb = torch.flatten(rgb, start_dim=1)
 
-        depth_out = spec
+        spec_out = spec
         for layer in self.spec_depth:
-            depth_out = layer(depth_out)
+            spec_out = layer(spec_out)
 
         rgb_out = rgb
-
+        print(f"RGB_out shape is: {rgb_out.shape}")
         for layer in self.clf_rgb:
             rgb_out = layer(rgb_out)
 
 
-        depth_evidence, rgb_evidence = F.softplus(depth_out), F.softplus(rgb_out)
-        depth_alpha, rgb_alpha = depth_evidence+1, rgb_evidence+1
-        depth_rgb_alpha = self.DS_Combin_two(depth_alpha, rgb_alpha)
-        return depth_alpha, rgb_alpha, depth_rgb_alpha
+        spec_evidence, rgb_evidence = F.softplus(spec_out), F.softplus(rgb_out)
+        spec_alpha, rgb_alpha = spec_evidence+1, rgb_evidence+1
+        spec_rgb_alpha = self.DS_Combin_two(spec_alpha, rgb_alpha)
+        return spec_alpha, rgb_alpha, spec_rgb_alpha

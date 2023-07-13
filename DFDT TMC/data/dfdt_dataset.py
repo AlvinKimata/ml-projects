@@ -53,7 +53,7 @@ class FakeAVCelebDataset:
 
         shards = tf.data.Dataset.from_tensor_slices(files)
         dataset = shards.interleave(tf.data.TFRecordDataset)
-        dataset = dataset.shuffle(buffer_size=250)
+        dataset = dataset.shuffle(buffer_size=50)
 
         dataset = dataset.map(_parse_function, num_parallel_calls = tf.data.AUTOTUNE)
         dataset = dataset.map(decode_inputs, num_parallel_calls = tf.data.AUTOTUNE)

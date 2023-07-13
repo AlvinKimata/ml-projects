@@ -32,8 +32,8 @@ def load_checkpoint(model, path):
 
 def log_metrics(set_name, metrics, logger):
     logger.info(
-        "{}: Loss: {:.5f} | depth_acc: {:.5f}, rgb_acc: {:.5f}".format(
-            set_name, metrics["loss"], metrics["depth_acc"], metrics["rgb_acc"]
+        "{}: Loss: {:.5f} | spec_acc: {:.5f}, rgb_acc: {:.5f}".format(
+            set_name, metrics["loss"], metrics["spec_acc"], metrics["rgb_acc"]
         )
     )
 

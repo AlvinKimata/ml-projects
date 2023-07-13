@@ -162,13 +162,15 @@ def main(argv):
     if FLAGS.shuffle_csv:
         input_csv = input_csv.sample(frac=1)
     with _close_on_exit(writers) as writers:
+        row_count = 0
         for row in input_csv.itertuples():
            index = row[0]
            v = row[1]
            if os.name == 'posix':
             v = v.str.replace('\\', '/')
            l = row[2]
-           print("Processing example %d of %d   (%d%%) \r" %(index, len(input_csv), index * 100 / len(input_csv)), end="")
+           row_count += 1
+           print("Processing example %d of %d   (%d%%) \r" %(row_count, len(input_csv), row_count * 100 / len(input_csv)), end="")
            seq_ex = serialize_example(video_path = v, label_name = l,label_map = l_map)
            writers[index % len(writers)].write(seq_ex.SerializeToString())
 

@@ -32,7 +32,7 @@ audio_args = {
 
 def get_args(parser):
     parser.add_argument("--batch_sz", type=int, default=128)
-    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeavceleb*")
+    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeav*")
     parser.add_argument("--val_data_path", type=str, default="datasets/val/fakeavceleb_1k*")
     parser.add_argument("--LOAD_SIZE", type=int, default=256)
     parser.add_argument("--FINE_SIZE", type=int, default=224)
@@ -41,24 +41,24 @@ def get_args(parser):
     parser.add_argument("--hidden", nargs="*", type=int, default=[])
     parser.add_argument("--hidden_sz", type=int, default=768)
     parser.add_argument("--img_embed_pool_type", type=str, default="avg", choices=["max", "avg"])
-    parser.add_argument("--img_hidden_sz", type=int, default=512)
+    parser.add_argument("--img_hidden_sz", type=int, default=1024)
     parser.add_argument("--include_bn", type=int, default=True)
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--lr_factor", type=float, default=0.3)
     parser.add_argument("--lr_patience", type=int, default=10)
     parser.add_argument("--max_epochs", type=int, default=500)
     parser.add_argument("--n_workers", type=int, default=12)
-    parser.add_argument("--name", type=str, default="ReleasedVersion")
+    parser.add_argument("--name", type=str, default="MMDF")
     parser.add_argument("--num_image_embeds", type=int, default=1)
     parser.add_argument("--patience", type=int, default=20)
-    parser.add_argument("--savedir", type=str, default="./savepath/ETMC/nyud2/")
+    parser.add_argument("--savedir", type=str, default="./savepath/")
     parser.add_argument("--seed", type=int, default=1)
     parser.add_argument("--n_classes", type=int, default=2)
     parser.add_argument("--annealing_epoch", type=int, default=10)
     parser.add_argument("--device", type=str, default='cpu')
-    parser.add_argument("--image_encoder_pretrain", type=bool, default = True)
+    parser.add_argument("--pretrained_image_encoder", type=bool, default = False)
     parser.add_argument("--freeze_image_encoder", type=bool, default = True)
-    parser.add_argument("--pretrained_rawnet", type = bool, default=True)
+    parser.add_argument("--pretrained_audio_encoder", type = bool, default=False)
     parser.add_argument("--freeze_audio_encoder", type = bool, default = True)
 
     for key, value in audio_args.items():
@@ -120,9 +120,9 @@ def model_eval(i_epoch, data, model, args, criterion):
     depth_preds = [l for sl in depth_preds for l in sl]
     rgb_preds = [l for sl in rgb_preds for l in sl]
     depthrgb_preds = [l for sl in depthrgb_preds for l in sl]
-    metrics["depth_acc"] = accuracy_score(tgts, depth_preds)
+    metrics["spec_acc"] = accuracy_score(tgts, depth_preds)
     metrics["rgb_acc"] = accuracy_score(tgts, rgb_preds)
-    metrics["depthrgb_acc"] = accuracy_score(tgts, depthrgb_preds)
+    metrics["specrgb_acc"] = accuracy_score(tgts, depthrgb_preds)
     return metrics
 
 def write_weight_histograms(writer, step, model):
@@ -145,7 +145,7 @@ def train(args):
     train_ds = FakeAVCelebDataset(data_dir=args.train_data_path)
     train_ds = train_ds.load_features_from_tfrec()
 
-    val_ds = FakeAVCelebDataset(data_dir=args.val_data_path)
+    val_ds = FakeAVCelebDataset(data_dir=args.train_data_path)
     val_ds = val_ds.load_features_from_tfrec()
     
     model = ETMC(args)
@@ -196,8 +196,8 @@ def train(args):
         logger.info("Train Loss: {:.4f}".format(np.mean(train_losses)))
         log_metrics("val", metrics, logger)
         logger.info(
-            "{}: Loss: {:.5f} | depth_acc: {:.5f}, rgb_acc: {:.5f}, depth rgb acc: {:.5f}".format(
-                "val", metrics["loss"], metrics["depth_acc"], metrics["rgb_acc"], metrics["depthrgb_acc"]
+            "{}: Loss: {:.5f} | spec_acc: {:.5f}, rgb_acc: {:.5f}, depth rgb acc: {:.5f}".format(
+                "val", metrics["loss"], metrics["spec_acc"], metrics["rgb_acc"], metrics["specrgb_acc"]
             )
         )
         tuning_metric = metrics["depthrgb_acc"]
@@ -233,8 +233,8 @@ def train(args):
         np.inf, val_ds, model, args, ce_loss
     )
     logger.info(
-        "{}: Loss: {:.5f} | depth_acc: {:.5f}, rgb_acc: {:.5f}, depth rgb acc: {:.5f}".format(
-            "Test", test_metrics["loss"], test_metrics["depth_acc"], test_metrics["rgb_acc"],
+        "{}: Loss: {:.5f} | spec_acc: {:.5f}, rgb_acc: {:.5f}, depth rgb acc: {:.5f}".format(
+            "Test", test_metrics["loss"], test_metrics["spec_acc"], test_metrics["rgb_acc"],
             test_metrics["depthrgb_acc"]
         )
     )

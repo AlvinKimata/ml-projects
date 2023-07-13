@@ -252,6 +252,7 @@ class RawNet(nn.Module):
         x = self.fc1_gru(x)
         x = self.fc2_gru(x)
         output=self.logsoftmax(x)
+        print(f"Spec output shape: {output.shape}")
       
         return output
         
