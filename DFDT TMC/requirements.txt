@@ -1,0 +1,4 @@
+wget
+timm
+torch
+tensorflow

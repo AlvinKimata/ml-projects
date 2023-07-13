@@ -1,8 +1,12 @@
+import re
+import os
+import wget
 import torch
 import torch.nn as nn
 import torchvision
 import torch.nn.functional as F
 from models.rawnet import SincConv, Residual_block
+from models.classifiers import DeepFakeClassifier
 
 
 
@@ -40,10 +44,51 @@ class ImageEncoder(nn.Module):
         out = out.transpose(1, 2).contiguous()
         return out  # BxNx2048
 
+class ImageEnc(nn.Module):
+    #Pretrained image encoder. Freeze weights.
+
+    def __init__(self, args):
+        super(ImageEnc, self).__init__()
+        self.device = args.device
+        self.fc = nn.Linear(in_features=2560, out_features = 1000)
+        self.image_encoder_pretrain = args.image_encoder_pretrain
+        self.freeze_image_encoder = args.freeze_image_encoder
+
+        if self.image_enc_pretrain == False:
+            self.model = DeepFakeClassifier(encoder = "tf_efficientnet_b7_ns").to(self.device)
+
+        else:
+            #Download pretrained ckpt.
+            url = 'https://github.com/selimsef/dfdc_deepfake_challenge/releases/download/0.0.1/final_999_DeepFakeClassifier_tf_efficientnet_b7_ns_0_23'
+            output_directory = 'pretrained/'
+            path_file = 'pretrained/final_999_DeepFakeClassifier_tf_efficientnet_b7_ns_0_23'
+
+            if not os.path.is_file(path_file):
+                #Download the model if it doesnt exist in the pretrained folder.
+                self.pretrained_ckpt = wget.download(url, out = output_directory)
+
+            self.state_dict = self.pretrained_ckpt.get("state_dict", self.pretrained_ckpt)
+
+            model = DeepFakeClassifier(encoder = "tf_efficientnet_b7_ns").to(self.device)
+            model.load_state_dict({re.sub("^module.", "", k): v for k, v in self.state_dict.items()}, strict=False)
+
+        if self.freeze_image_encoder == True:
+            for param in model.named_parameters():
+                param.requires_grad = False
+
+        self.model.fc = nn.Identity()
+
+    def forward(self, x):
+        x = self.image_enc(x)
+        x = self.flatten(x)
+        out = self.fc(x)
+        return out
+
 
 class RawNet(nn.Module):
     def __init__(self, args):
         super(RawNet, self).__init__()
+        self.pretrained_rawnet = args.pretrained_rawnet
 
         
         self.device=args.device
