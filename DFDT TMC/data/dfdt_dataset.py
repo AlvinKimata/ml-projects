@@ -39,13 +39,13 @@ def decode_inputs(video, spectrogram, label_map):
 
 class FakeAVCelebDataset:
 
-    def __init__(self, data_dir):
-        self.data_dir = data_dir
+    def __init__(self, args):
+        self.args = args
         self.samples = self.load_features_from_tfrec()
 
     def load_features_from_tfrec(self):
         '''Loads raw features from a tfrecord file and returns them as raw inputs'''
-        ds = tf.io.matching_files(self.data_dir)
+        ds = tf.io.matching_files(self.args.data_dir)
         files = tf.random.shuffle(ds)
 
         shards = tf.data.Dataset.from_tensor_slices(files)
@@ -54,12 +54,15 @@ class FakeAVCelebDataset:
 
         dataset = dataset.map(_parse_function, num_parallel_calls = tf.data.AUTOTUNE)
         dataset = dataset.map(decode_inputs, num_parallel_calls = tf.data.AUTOTUNE)
-        dataset = dataset.padded_batch(batch_size = 8)
+        dataset = dataset.padded_batch(batch_size = self.args.batch_size)
 
-        return dataset
+        for dataset_len, _ in enumerate(dataset.as_numpy_iterator()):
+            continue
+
+        return dataset, dataset_len
     
     def __len__(self):
-        self.samples = self.load_features_from_tfrec(self.data_dir)
+        self.samples = self.load_features_from_tfrec(self.args.data_dir)
         cnt = self.samples.reduce(np.int64(0), lambda x, _: x + 1)
         cnt = cnt.numpy()
         return cnt

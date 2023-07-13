@@ -133,7 +133,6 @@ class ETMC(TMC):
     def forward(self, rgb, spec):
         spec = self.specenc(spec)
         spec = torch.flatten(spec, start_dim=1)
-        print(f"SPec output is: {spec.shape}")
 
         rgb = self.rgbenc(rgb)
         rgb = torch.flatten(rgb, start_dim=1)
@@ -143,7 +142,6 @@ class ETMC(TMC):
             spec_out = layer(spec_out)
 
         rgb_out = rgb
-        print(f"RGB_out shape is: {rgb_out.shape}")
         for layer in self.clf_rgb:
             rgb_out = layer(rgb_out)
 

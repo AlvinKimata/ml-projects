@@ -31,13 +31,12 @@ audio_args = {
 
 
 def get_args(parser):
-    parser.add_argument("--batch_sz", type=int, default=128)
-    parser.add_argument("--train_data_path", type=str, default="datasets/train/fakeav*")
-    parser.add_argument("--val_data_path", type=str, default="datasets/val/fakeavceleb_1k*")
+    parser.add_argument("--batch_size", type=int, default=8)
+    parser.add_argument("--data_dir", type=str, default="datasets/train/fakeav*")
     parser.add_argument("--LOAD_SIZE", type=int, default=256)
     parser.add_argument("--FINE_SIZE", type=int, default=224)
-    parser.add_argument("--dropout", type=float, default=0.1)
-    parser.add_argument("--gradient_accumulation_steps", type=int, default=3)
+    parser.add_argument("--dropout", type=float, default=0.2)
+    parser.add_argument("--gradient_accumulation_steps", type=int, default=1)
     parser.add_argument("--hidden", nargs="*", type=int, default=[])
     parser.add_argument("--hidden_sz", type=int, default=768)
     parser.add_argument("--img_embed_pool_type", type=str, default="avg", choices=["max", "avg"])
@@ -141,11 +140,11 @@ def train(args):
     args.savedir = os.path.join(args.savedir, args.name)
     os.makedirs(args.savedir, exist_ok=True)
 
-    train_ds = FakeAVCelebDataset(data_dir=args.train_data_path)
-    train_ds = train_ds.load_features_from_tfrec()
+    train_ds = FakeAVCelebDataset(args)
+    train_ds, train_ds_len = train_ds.load_features_from_tfrec()
 
-    val_ds = FakeAVCelebDataset(data_dir=args.train_data_path)
-    val_ds = val_ds.load_features_from_tfrec()
+    val_ds = FakeAVCelebDataset(args)
+    val_ds, val_ds_len = val_ds.load_features_from_tfrec()
     
     model = ETMC(args)
     optimizer = get_optimizer(model, args)
@@ -157,22 +156,12 @@ def train(args):
     torch.save(args, os.path.join(args.savedir, "checkpoint.pt"))
     start_epoch, global_step, n_no_improve, best_metric = 0, 0, 0, -np.inf
 
-    if os.path.exists(os.path.join(args.savedir, "checkpoint.pt")):
-        checkpoint = torch.load(os.path.join(args.savedir, "checkpoint.pt"))
-        start_epoch = checkpoint["epoch"]
-        n_no_improve = checkpoint["n_no_improve"]
-        best_metric = checkpoint["best_metric"]
-        model.load_state_dict(checkpoint["state_dict"])
-        optimizer.load_state_dict(checkpoint["optimizer"])
-        scheduler.load_state_dict(checkpoint["scheduler"])
-
     for i_epoch in range(start_epoch, args.max_epochs):
         train_losses = []
         model.train()
         optimizer.zero_grad()
-        train_ds_len = tf.data.Dataset.cardinality(train_ds)
 
-        for index, batch in tqdm(enumerate(train_ds), total = train_ds_len):
+        for index, batch in tqdm(enumerate(train_ds), total = train_ds_len + 1):
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps

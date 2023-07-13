@@ -45,7 +45,6 @@ class ImageEncoder(nn.Module):
         x = self.model(x)
         x = self.flatten(x)
         out = self.fc(x)
-        print(f"Out img_enc shape is: {out.shape}")
         return out
 
 
@@ -98,14 +97,12 @@ class RawNet(nn.Module):
         self.freeze_audio_encoder = args.freeze_audio_encoder
 
         if self.pretrained_audio_encoder == True:
-            if self.freeze_audio_encoder:
-                ckpt = torch.load('pretrained/RawNet.pth', map_location = torch.device(self.device))
-                self.load_state_dict(ckpt, strict = False)
+            ckpt = torch.load('pretrained/RawNet.pth', map_location = torch.device(self.device))
+            self.load_state_dict(ckpt, strict = False)
+        
+        if self.freeze_audio_encoder:
                 for param in self.parameters():
                     param.requires_grad = False
-            else:
-                ckpt = torch.load('pretrained/RawNet.pth', map_location = torch.device(self.device))
-                self.load_state_dict(ckpt, strict = False)
 
 
     def forward(self, x, y = None):
