@@ -1,4 +1,7 @@
+#Code outsourced from https://github.com/deepmind/dmvr/tree/master and later modified.
+
 """Python script to generate TFRecords of SequenceExample from raw videos."""
+
 import contextlib
 import math
 import os
@@ -157,7 +160,8 @@ def main(argv):
         l_map = None
 
     if FLAGS.shuffle_csv:
-        input_csv = input_csv.sample(frac=1)
+        # input_csv = input_csv.sample(frac=1)
+        input_csv = input_csv.groupby('label', group_keys = False).apply(lambda x: x.sample(2))
     with _close_on_exit(writers) as writers:
         for row in input_csv.itertuples():
            index = row[0]
