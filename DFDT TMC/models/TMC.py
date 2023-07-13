@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from models.image import ImageEncoder, RawNet
+from models import image
 import torch.nn.functional as F
 
 
@@ -36,8 +36,8 @@ class TMC(nn.Module):
     def __init__(self, args):
         super(TMC, self).__init__()
         self.args = args
-        self.rgbenc = ImageEncoder(args)
-        self.specenc = RawNet(args)
+        self.rgbenc = image.ImageEnc(args)
+        self.specenc = image.RawNet(args)
         
         spec_last_size = args.img_hidden_sz * 2
         rgb_last_size = args.img_hidden_sz * args.num_image_embeds
