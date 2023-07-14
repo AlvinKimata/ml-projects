@@ -141,10 +141,10 @@ def train(args):
     os.makedirs(args.savedir, exist_ok=True)
 
     train_ds = FakeAVCelebDataset(args)
-    train_ds, train_ds_len = train_ds.load_features_from_tfrec()
+    train_ds = train_ds.load_features_from_tfrec()
 
     val_ds = FakeAVCelebDataset(args)
-    val_ds, val_ds_len = val_ds.load_features_from_tfrec()
+    val_ds = val_ds.load_features_from_tfrec()
     
     model = ETMC(args)
     optimizer = get_optimizer(model, args)
@@ -161,7 +161,7 @@ def train(args):
         model.train()
         optimizer.zero_grad()
 
-        for index, batch in tqdm(enumerate(train_ds), total = train_ds_len + 1):
+        for index, batch in tqdm(enumerate(train_ds)):
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps
@@ -174,7 +174,7 @@ def train(args):
                 optimizer.zero_grad()
 
         #Write weight histograms to Tensorboard.
-        write_weight_histograms(writer, index, model)
+        write_weight_histograms(writer, i_epoch, model)
 
         model.eval()
         metrics = model_eval(
@@ -187,7 +187,7 @@ def train(args):
                 "val", metrics["loss"], metrics["spec_acc"], metrics["rgb_acc"], metrics["specrgb_acc"]
             )
         )
-        tuning_metric = metrics["depthrgb_acc"]
+        tuning_metric = metrics["specrgb_acc"]
 
         scheduler.step(tuning_metric)
         is_improvement = tuning_metric > best_metric
