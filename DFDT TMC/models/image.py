@@ -1,6 +1,5 @@
 import re
 import os
-import wget
 import torch
 import torchvision
 import torch.nn as nn
@@ -12,6 +11,7 @@ class ImageEncoder(nn.Module):
     def __init__(self, args):
         super(ImageEncoder, self).__init__()
         self.device = args.device
+        self.args = args
         self.flatten = nn.Flatten()
         self.fc = nn.Linear(in_features=2560, out_features = 1024)
         self.pretrained_image_encoder = args.pretrained_image_encoder
@@ -21,15 +21,7 @@ class ImageEncoder(nn.Module):
             self.model = DeepFakeClassifier(encoder = "tf_efficientnet_b7_ns").to(self.device)
 
         else:
-            #Download pretrained ckpt.
-            url = 'https://github.com/selimsef/dfdc_deepfake_challenge/releases/download/0.0.1/final_999_DeepFakeClassifier_tf_efficientnet_b7_ns_0_23'
-            output_directory = 'pretrained/'
-            path_file = 'pretrained/final_999_DeepFakeClassifier_tf_efficientnet_b7_ns_0_23'
-
-            if not os.path.is_file(path_file):
-                #Download the model if it doesnt exist in the pretrained folder.
-                self.pretrained_ckpt = wget.download(url, out = output_directory)
-
+            self.pretrained_ckpt = torch.load('DFDT TMC/pretrained/final_999_DeepFakeClassifier_tf_efficientnet_b7_ns_0_23', map_location = torch.device(self.args.device))
             self.state_dict = self.pretrained_ckpt.get("state_dict", self.pretrained_ckpt)
 
             self.model = DeepFakeClassifier(encoder = "tf_efficientnet_b7_ns").to(self.device)
@@ -97,7 +89,7 @@ class RawNet(nn.Module):
         self.freeze_audio_encoder = args.freeze_audio_encoder
 
         if self.pretrained_audio_encoder == True:
-            ckpt = torch.load('pretrained/RawNet.pth', map_location = torch.device(self.device))
+            ckpt = torch.load('DFDT TMC/pretrained/RawNet.pth', map_location = torch.device(self.device))
             self.load_state_dict(ckpt, strict = False)
         
         if self.freeze_audio_encoder:
@@ -186,4 +178,3 @@ class RawNet(nn.Module):
             if i == 0: nb_filts[0] = nb_filts[1]
             
         return nn.Sequential(*layers)
-
