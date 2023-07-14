@@ -1,5 +1,6 @@
 import re
 import os
+import wget
 import torch
 import torchvision
 import torch.nn as nn
@@ -25,7 +26,9 @@ class ImageEncoder(nn.Module):
             self.state_dict = self.pretrained_ckpt.get("state_dict", self.pretrained_ckpt)
 
             self.model = DeepFakeClassifier(encoder = "tf_efficientnet_b7_ns").to(self.device)
+            print("Loading pretrained image encoder...")
             self.model.load_state_dict({re.sub("^module.", "", k): v for k, v in self.state_dict.items()}, strict=False)
+            print("Loaded pretrained image encoder.")
 
         if self.freeze_image_encoder == True:
             for idx, param in self.model.named_parameters():
@@ -89,7 +92,9 @@ class RawNet(nn.Module):
         self.freeze_audio_encoder = args.freeze_audio_encoder
 
         if self.pretrained_audio_encoder == True:
+            print("Loading pretrained audio encoder")
             ckpt = torch.load('DFDT TMC/pretrained/RawNet.pth', map_location = torch.device(self.device))
+            print("Loaded pretrained audio encoder")
             self.load_state_dict(ckpt, strict = False)
         
         if self.freeze_audio_encoder:

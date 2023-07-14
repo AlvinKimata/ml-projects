@@ -15,6 +15,7 @@ from sklearn.metrics import accuracy_score
 from torch.utils.tensorboard import SummaryWriter
 
 os.environ['CUDA_VISIBLE_DEVICES'] ='0'
+# torch.set_default_dtype(torch.bfloat16)
 
 
 # Define the audio_args dictionary
@@ -32,7 +33,7 @@ audio_args = {
 
 def get_args(parser):
     parser.add_argument("--batch_size", type=int, default=8)
-    parser.add_argument("--data_dir", type=str, default="datasets/train/fakeav*")
+    parser.add_argument("--data_dir", type=str, default="datasets/train/fakeavceleb*")
     parser.add_argument("--LOAD_SIZE", type=int, default=256)
     parser.add_argument("--FINE_SIZE", type=int, default=224)
     parser.add_argument("--dropout", type=float, default=0.2)
@@ -200,7 +201,6 @@ def train(args):
         save_checkpoint(
             {
                 "epoch": i_epoch + 1,
-                "state_dict": model.state_dict(),
                 "optimizer": optimizer.state_dict(),
                 "scheduler": scheduler.state_dict(),
                 "n_no_improve": n_no_improve,
