@@ -56,15 +56,10 @@ class FakeAVCelebDataset:
         dataset = dataset.map(decode_inputs, num_parallel_calls = tf.data.AUTOTUNE)
         dataset = dataset.padded_batch(batch_size = self.args.batch_size)
 
-        for dataset_len, _ in enumerate(dataset.as_numpy_iterator()):
-            continue
-
-        return dataset, dataset_len
+        return dataset
     
     def __len__(self):
         self.samples = self.load_features_from_tfrec(self.args.data_dir)
         cnt = self.samples.reduce(np.int64(0), lambda x, _: x + 1)
         cnt = cnt.numpy()
         return cnt
-
-
