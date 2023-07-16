@@ -15,8 +15,6 @@ from utils.logger import create_logger
 from sklearn.metrics import accuracy_score
 from torch.utils.tensorboard import SummaryWriter
 
-os.environ['CUDA_VISIBLE_DEVICES'] ='0'
-
 # Define the audio_args dictionary
 audio_args = {
     'nb_samp': 64600,
