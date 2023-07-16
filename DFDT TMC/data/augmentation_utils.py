@@ -51,7 +51,7 @@ class PitchShift(AudioTransform):
         '''
         data : ndarray of audio timeseries
         '''        
-        return librosa.effects.pitch_shift(data,sr=22050,n_steps=self.n_steps)
+        return librosa.effects.pitch_shift(data,sr=16000,n_steps=self.n_steps)
 
 
 class AddGaussianNoise(AudioTransform):
@@ -74,7 +74,7 @@ create_frame_transforms = Compose([
         GaussNoise(p=0.1),
         GaussianBlur(blur_limit=3, p=0.05),
         HorizontalFlip(),
-        PadIfNeeded(min_height=224, min_width=224, border_mode=cv2.BORDER_CONSTANT),
+        PadIfNeeded(min_height=256, min_width=256, border_mode=cv2.BORDER_CONSTANT),
         OneOf([RandomBrightnessContrast(), FancyPCA(), HueSaturationValue()], p=0.7),
         ToGray(p=0.2),
         ShiftScaleRotate(shift_limit=0.1, scale_limit=0.2, rotate_limit=10, border_mode=cv2.BORDER_CONSTANT, p=0.5),])

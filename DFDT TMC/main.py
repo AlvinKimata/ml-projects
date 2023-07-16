@@ -7,7 +7,8 @@ import torch.optim as optim
 
 from models.TMC import ETMC, ce_loss
 import torchvision.transforms as transforms
-from data.dfdt_dataset import FakeAVCelebDataset
+from data.dfdt_dataset import FakeAVCelebDatasetTrain, FakeAVCelebDatasetVal
+
 
 from utils.utils import *
 from utils.logger import create_logger
@@ -59,6 +60,7 @@ def get_args(parser):
     parser.add_argument("--pretrained_audio_encoder", type = bool, default=False)
     parser.add_argument("--freeze_audio_encoder", type = bool, default = True)
     parser.add_argument("--augment_dataset", type = bool, default = True)
+
     for key, value in audio_args.items():
         parser.add_argument(f"--{key}", type=type(value), default=value)
 
@@ -71,8 +73,6 @@ def get_scheduler(optimizer, args):
     return optim.lr_scheduler.ReduceLROnPlateau(
         optimizer, "max", patience=args.lr_patience, verbose=True, factor=args.lr_factor
     )
-
-
 
 def model_forward(i_epoch, model, args, ce_loss, batch):
     rgb, spec, tgt = batch['video_reshaped'], batch['spectrogram'], batch['label_map']
@@ -96,9 +96,8 @@ def model_eval(i_epoch, data, model, args, criterion):
     model.eval()
     with torch.no_grad():
         losses, depth_preds, rgb_preds, depthrgb_preds, tgts = [], [], [], [], []
-        for batch in data:
+        for batch in tqdm(data):
             loss, depth_alpha, rgb_alpha, depth_rgb_alpha, tgt = model_forward(i_epoch, model, args, criterion, batch)
-            print(f"Loss is: {loss.item()}")
             losses.append(loss.item())
 
             depth_pred = depth_alpha.argmax(dim=1).cpu().detach().numpy()
@@ -112,6 +111,7 @@ def model_eval(i_epoch, data, model, args, criterion):
             tgts.append(tgt)
 
     metrics = {"loss": np.mean(losses)}
+    print(f"Mean loss is: {metrics['loss']}")
 
     tgts = [l for sl in tgts for l in sl]
     depth_preds = [l for sl in depth_preds for l in sl]
@@ -139,10 +139,10 @@ def train(args):
     args.savedir = os.path.join(args.savedir, args.name)
     os.makedirs(args.savedir, exist_ok=True)
 
-    train_ds = FakeAVCelebDataset(args)
+    train_ds = FakeAVCelebDatasetTrain(args)
     train_ds = train_ds.load_features_from_tfrec()
 
-    val_ds = FakeAVCelebDataset(args)
+    val_ds = FakeAVCelebDatasetVal(args)
     val_ds = val_ds.load_features_from_tfrec()
     
     model = ETMC(args)
@@ -160,7 +160,7 @@ def train(args):
         model.train()
         optimizer.zero_grad()
 
-        for batch in tqdm(enumerate(train_ds)):
+        for index, batch in tqdm(enumerate(train_ds)):
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps
