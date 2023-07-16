@@ -7,7 +7,7 @@ import torch.optim as optim
 
 from models.TMC import ETMC, ce_loss
 import torchvision.transforms as transforms
-from data.dfdt_dataset import FakeAVCelebDataset
+from data.dfdt_dataset import decode_train_inputs, FakeAVCelebDataset
 
 from utils.utils import *
 from utils.logger import create_logger
@@ -60,7 +60,7 @@ def get_args(parser):
     parser.add_argument("--freeze_image_encoder", type=bool, default = True)
     parser.add_argument("--pretrained_audio_encoder", type = bool, default=False)
     parser.add_argument("--freeze_audio_encoder", type = bool, default = True)
-
+    parser.add_argument("--augment_dataset", type = bool, default = True)
     for key, value in audio_args.items():
         parser.add_argument(f"--{key}", type=type(value), default=value)
 
@@ -143,6 +143,9 @@ def train(args):
 
     train_ds = FakeAVCelebDataset(args)
     train_ds = train_ds.load_features_from_tfrec()
+    if args.augment_dataset:
+        dataset = dataset.map(decode_train_inputs, num_parallel_calls = tf.data.AUTOTUNE)
+
 
     val_ds = FakeAVCelebDataset(args)
     val_ds = val_ds.load_features_from_tfrec()

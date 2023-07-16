@@ -1,6 +1,7 @@
-#Data augmentation
-import albumentations
+import cv2
 import librosa
+import numpy as np
+import albumentations
 from albumentations import (Compose, ImageCompression, GaussNoise, HorizontalFlip, 
                             PadIfNeeded, OneOf,ToGray, ShiftScaleRotate, GaussianBlur,
                             RandomBrightnessContrast, FancyPCA, HueSaturationValue, BasicTransform)
