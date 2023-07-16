@@ -63,3 +63,49 @@ class FakeAVCelebDataset:
         cnt = self.samples.reduce(np.int64(0), lambda x, _: x + 1)
         cnt = cnt.numpy()
         return cnt
+
+
+
+def aug_img_fn(frame):
+  frame = frame.numpy().astype(np.uint8)
+  frame_data = {'image': frame}
+  aug_frame_data = create_frame_transforms(**frame_data)
+  aug_img = frame_data['image']
+  return aug_img
+
+def aug_spec_fn(spec):
+  spec = spec.numpy()
+  spec_data = {'spec': spec}
+  aug_spec_data = create_spec_transforms(**spec_data)
+  aug_spec = spec_data['spec']
+  return aug_spec
+
+  
+def decode_train_inputs(frame, spec, label):
+    '''Decode tensors to arrays with desired shape'''
+    #Data augmentation for spectograms
+    spec = tf.reshape(spec, [435, 128])
+    spec_shape = spec.shape
+    spec_augmented = tf.py_function(aug_spec_fn, [spec], tf.float32)
+    spec_augmented.set_shape(spec_shape)
+
+    #Data augmentation for image frames.
+    frame = tf.reshape(frame, [224, 224, 3])
+    frame_shape = frame.shape
+    frame_augmented = tf.py_function(aug_img_fn, [frame], tf.float32)
+    frame_augmented.set_shape(frame_shape)
+
+    # spec = tf.expand_dims(spec, axis = 0)
+    label =  tf.one_hot(label, depth = 2)    
+    return frame_augmented, spec_augmented, label
+
+
+def decode_validation_inputs(frame, spec, label):
+    '''Decode tensors to arrays with desired shape'''
+    frame = tf.reshape(frame, [224, 224, 3])
+    spec = tf.reshape(spec, [435, 128])
+
+    # spec = tf.expand_dims(spec, axis = 0)
+    label =  tf.one_hot(label, depth = 2)    
+    return frame, spec, label
+
