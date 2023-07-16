@@ -29,15 +29,28 @@ def _parse_function(example_proto):
 @tf.function
 def decode_inputs(video, spectrogram, label_map):
     '''Decode tensors to arrays with desired shape'''
-
     frame = tf.reshape(video, [10, 3, 256, 256])
     frame = frame[0] #Pick the first frame.
+    # frame = tf.cast(frame, tf.float32)
 
     label_map = tf.expand_dims(label_map, axis = 0)
     
     sample = {'video_reshaped': frame, 'spectrogram': spectrogram, 'label_map': label_map}
     return sample
 
+def decode_train_inputs(video, spectrogram, label_map):
+    #Data augmentation for spectograms
+    spec_augmented = tf.py_function(aug_spec_fn, [spectrogram], tf.float32)
+
+    frame = tf.reshape(video, [10, 3, 256, 256])
+    frame = frame[0] #Pick the first frame.
+    frame_shape = frame.shape
+
+    frame_augmented = tf.py_function(aug_img_fn, [video], tf.float32)
+    frame_augmented.set_shape(frame_shape)
+
+    augmented_sample = {'video_reshaped': frame_augmented, 'spectogram': spec_augmented, 'label_map': label_map}
+    return augmented_sample
 
 
 def aug_img_fn(frame):
@@ -53,23 +66,6 @@ def aug_spec_fn(spec):
   aug_spec_data = create_spec_transforms(**spec_data)
   aug_spec = aug_spec_data['spec']
   return aug_spec
-
-  
-def decode_train_inputs(sample):
-    '''Decode tensors to arrays with desired shape'''
-    #Data augmentation for spectograms
-    spec_augmented = tf.py_function(aug_spec_fn, [sample['spectogram']], tf.float32)
-
-    #Data augmentation for image frames.
-    frame = tf.reshape(frame, [3, 256, 256]) #Channels first for pytorch models.
-    frame_shape = frame.shape
-    frame_augmented = tf.py_function(aug_img_fn, [sample['video_reshaped']], tf.int8)
-    frame_augmented.set_shape(frame_shape)
-    frame_augmented = tf.cast(frame_augmented, tf.float32)
-
-    augmented_sample = {'video_reshaped': frame_augmented, 'spectogram': spec_augmented, 'label_map': sample['label_map']}
-    return augmented_sample
-
 
 
 class FakeAVCelebDataset:
@@ -89,7 +85,12 @@ class FakeAVCelebDataset:
 
         dataset = dataset.map(_parse_function, num_parallel_calls = tf.data.AUTOTUNE)
         dataset = dataset.map(decode_inputs, num_parallel_calls = tf.data.AUTOTUNE)
+        
         dataset = dataset.padded_batch(batch_size = self.args.batch_size)
+        return dataset
+    
+    def perform_data_augmentation(self):
+        dataset = dataset = dataset.map(decode_train_inputs, num_parallel_calls = tf.data.AUTOTUNE)
         return dataset
     
     def __len__(self):

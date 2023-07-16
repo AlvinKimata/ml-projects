@@ -7,7 +7,7 @@ import torch.optim as optim
 
 from models.TMC import ETMC, ce_loss
 import torchvision.transforms as transforms
-from data.dfdt_dataset import decode_train_inputs, FakeAVCelebDataset
+from data.dfdt_dataset import FakeAVCelebDataset, FakeAVCelebDatasetTrain
 
 from utils.utils import *
 from utils.logger import create_logger
@@ -15,8 +15,6 @@ from sklearn.metrics import accuracy_score
 from torch.utils.tensorboard import SummaryWriter
 
 os.environ['CUDA_VISIBLE_DEVICES'] ='0'
-# torch.set_default_dtype(torch.bfloat16)
-
 
 # Define the audio_args dictionary
 audio_args = {
@@ -141,11 +139,8 @@ def train(args):
     args.savedir = os.path.join(args.savedir, args.name)
     os.makedirs(args.savedir, exist_ok=True)
 
-    train_ds = FakeAVCelebDataset(args)
+    train_ds = FakeAVCelebDatasetTrain(args)
     train_ds = train_ds.load_features_from_tfrec()
-    if args.augment_dataset:
-        dataset = dataset.map(decode_train_inputs, num_parallel_calls = tf.data.AUTOTUNE)
-
 
     val_ds = FakeAVCelebDataset(args)
     val_ds = val_ds.load_features_from_tfrec()
@@ -165,7 +160,7 @@ def train(args):
         model.train()
         optimizer.zero_grad()
 
-        for index, batch in tqdm(enumerate(train_ds)):
+        for batch in tqdm(enumerate(train_ds)):
             loss, depth_out, rgb_out, depthrgb, tgt = model_forward(i_epoch, model, args, ce_loss, batch)
             if args.gradient_accumulation_steps > 1:
                  loss = loss / args.gradient_accumulation_steps
@@ -217,7 +212,7 @@ def train(args):
             logger.info("No improvement. Breaking out of loop.")
             break
     writer.close()
-    load_checkpoint(model, os.path.join(args.savedir, "model_best.pt"))
+    # load_checkpoint(model, os.path.join(args.savedir, "model_best.pt"))
     model.eval()
     test_metrics = model_eval(
         np.inf, val_ds, model, args, ce_loss
