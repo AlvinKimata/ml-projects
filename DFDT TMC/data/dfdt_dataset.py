@@ -41,9 +41,9 @@ def decode_inputs(video, spectrogram, label_map):
 
 def decode_train_inputs(video, spectrogram, label_map):
     #Data augmentation for spectograms
-    # spectrogram_shape = spectrogram.shape
-    # spec_augmented = tf.py_function(aug_spec_fn, [spectrogram], tf.float32)
-    # spectrogram.set_shape(spectrogram_shape)
+    spectrogram_shape = spectrogram.shape
+    spec_augmented = tf.py_function(aug_spec_fn, [spectrogram], tf.float32)
+    spec_augmented.set_shape(spectrogram_shape)
 
     frame = tf.reshape(video, [10, 256, 256, 3])
     frame = frame[0] #Pick the first frame.
@@ -55,7 +55,7 @@ def decode_train_inputs(video, spectrogram, label_map):
     frame_augmented.set_shape([3, 256, 256])
     label_map = tf.expand_dims(label_map, axis = 0)
 
-    augmented_sample = {'video_reshaped': frame_augmented, 'spectrogram': spectrogram, 'label_map': label_map}
+    augmented_sample = {'video_reshaped': frame_augmented, 'spectrogram': spec_augmented, 'label_map': label_map}
     return augmented_sample
 
 
