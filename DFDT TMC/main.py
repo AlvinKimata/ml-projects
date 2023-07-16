@@ -7,7 +7,7 @@ import torch.optim as optim
 
 from models.TMC import ETMC, ce_loss
 import torchvision.transforms as transforms
-from data.dfdt_dataset import FakeAVCelebDataset, FakeAVCelebDatasetTrain
+from data.dfdt_dataset import FakeAVCelebDataset
 
 from utils.utils import *
 from utils.logger import create_logger
@@ -139,7 +139,7 @@ def train(args):
     args.savedir = os.path.join(args.savedir, args.name)
     os.makedirs(args.savedir, exist_ok=True)
 
-    train_ds = FakeAVCelebDatasetTrain(args)
+    train_ds = FakeAVCelebDataset(args)
     train_ds = train_ds.load_features_from_tfrec()
 
     val_ds = FakeAVCelebDataset(args)
