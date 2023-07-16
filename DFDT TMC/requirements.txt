@@ -6,3 +6,4 @@ moviepy
 librosa
 ffmpeg
 albumentations
+cv2
