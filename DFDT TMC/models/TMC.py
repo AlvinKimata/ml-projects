@@ -153,41 +153,4 @@ class ETMC(TMC):
         depth_alpha, rgb_alpha, pseudo_alpha = depth_evidence+1, rgb_evidence+1, pseudo_evidence+1
         depth_rgb_alpha = self.DS_Combin_two(self.DS_Combin_two(depth_alpha, rgb_alpha), pseudo_alpha)
         return depth_alpha, rgb_alpha, pseudo_alpha, depth_rgb_alpha
-        # spec_evidence, rgb_evidence = F.softplus(spec_out), F.softplus(rgb_out)
-        # spec_alpha, rgb_alpha = spec_evidence+1, rgb_evidence+1
-        # spec_rgb_alpha = self.DS_Combin_two(spec_alpha, rgb_alpha)
-        # return spec_alpha, rgb_alpha, spec_rgb_alpha
 
-
-# class ETMC(TMC):
-#     def __init__(self, args):
-#         super(ETMC, self).__init__(args)
-#         last_size = args.img_hidden_sz * args.num_image_embeds + args.img_hidden_sz * args.num_image_embeds
-#         self.clf = nn.ModuleList()
-#         for hidden in args.hidden:
-#             self.clf.append(nn.Linear(last_size, hidden))
-#             self.clf.append(nn.ReLU())
-#             self.clf.append(nn.Dropout(args.dropout))
-#             last_size = hidden
-#         self.clf.append(nn.Linear(last_size, args.n_classes))
-
-#     def forward(self, rgb, depth):
-#         depth = self.depthenc(depth)
-#         depth = torch.flatten(depth, start_dim=1)
-#         rgb = self.rgbenc(rgb)
-#         rgb = torch.flatten(rgb, start_dim=1)
-#         depth_out = depth
-#         for layer in self.clf_depth:
-#             depth_out = layer(depth_out)
-#         rgb_out = rgb
-#         for layer in self.clf_rgb:
-#             rgb_out = layer(rgb_out)
-
-#         pseudo_out = torch.cat([rgb, depth], -1)
-#         for layer in self.clf:
-#             pseudo_out = layer(pseudo_out)
-
-#         depth_evidence, rgb_evidence, pseudo_evidence = F.softplus(depth_out), F.softplus(rgb_out), F.softplus(pseudo_out)
-#         depth_alpha, rgb_alpha, pseudo_alpha = depth_evidence+1, rgb_evidence+1, pseudo_evidence+1
-#         depth_rgb_alpha = self.DS_Combin_two(self.DS_Combin_two(depth_alpha, rgb_alpha), pseudo_alpha)
-#         return depth_alpha, rgb_alpha, pseudo_alpha, depth_rgb_alpha
