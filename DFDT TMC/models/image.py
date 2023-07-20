@@ -93,7 +93,7 @@ class RawNet(nn.Module):
 
         if self.pretrained_audio_encoder == True:
             print("Loading pretrained audio encoder")
-            ckpt = torch.load('DFDT TMC/pretrained/RawNet.pth', map_location = torch.device(self.device))
+            ckpt = torch.load('DFDT TMC/pretrained/RawNet2.pth', map_location = torch.device(self.device))
             print("Loaded pretrained audio encoder")
             self.load_state_dict(ckpt, strict = False)
         
