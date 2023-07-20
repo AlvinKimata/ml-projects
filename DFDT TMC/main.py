@@ -227,7 +227,7 @@ def train(args):
     logger.info(
         "{}: Loss: {:.5f} | spec_acc: {:.5f}, rgb_acc: {:.5f}, depth rgb acc: {:.5f}".format(
             "Test", test_metrics["loss"], test_metrics["spec_acc"], test_metrics["rgb_acc"],
-            test_metrics["depthrgb_acc"]
+            test_metrics["specrgb_acc"]
         )
     )
     log_metrics(f"Test", test_metrics, logger)
