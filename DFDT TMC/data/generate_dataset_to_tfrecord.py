@@ -14,13 +14,14 @@ import ffmpeg
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-
+import tqdm
 import warnings
 warnings.filterwarnings('ignore')
+print(f"PWD : {os.getcwd()}")
 
-flags.DEFINE_string("csv_path", "fakeavceleb_1k.csv", "Input csv")
-flags.DEFINE_string("output_path", "fakeavceleb_tfrec", "Tfrecords output path.")
-flags.DEFINE_string("video_root_path", "./",
+flags.DEFINE_string("csv_path", "datasets/fakeavceleb_1k.csv", "Input csv")
+flags.DEFINE_string("output_path", "tfrecords", "Tfrecords output path.")
+flags.DEFINE_string("video_root_path", "inputs/",
                     "Root directory containing the raw videos.")
 flags.DEFINE_integer(
     "num_shards", 4, "Number of shards to output, -1 means"
@@ -163,14 +164,15 @@ def main(argv):
         input_csv = input_csv.sample(frac=1)
     with _close_on_exit(writers) as writers:
         row_count = 0
-        for row in input_csv.itertuples():
+        for row in tqdm.tqdm(input_csv.itertuples(), total = input_csv.shape[0]):
            index = row[0]
            v = row[1]
            if os.name == 'posix':
-            v = v.str.replace('\\', '/')
+            v = v.replace('\\', '/')
            l = row[2]
            row_count += 1
            print("Processing example %d of %d   (%d%%) \r" %(row_count, len(input_csv), row_count * 100 / len(input_csv)), end="")
+           v = os.path.join(FLAGS.video_root_path, v)
            seq_ex = serialize_example(video_path = v, label_name = l,label_map = l_map)
            writers[index % len(writers)].write(seq_ex.SerializeToString())
 
