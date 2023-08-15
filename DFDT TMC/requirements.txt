@@ -7,3 +7,4 @@ librosa
 ffmpeg
 albumentations
 opencv-python
+tqdm
