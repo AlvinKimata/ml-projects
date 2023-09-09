@@ -1,0 +1,2 @@
+## This project involves building and deploying a machine learning application with flask as an API endpoint.
+## Reference to this project can be found [here.](https://www.datacamp.com/tutorial/machine-learning-models-api-python)
