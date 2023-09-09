@@ -3,3 +3,5 @@ numpy
 pandas
 scikit-learn
 joblib
+Werkzeug==2.3.0
+watchdog-3.0.0
