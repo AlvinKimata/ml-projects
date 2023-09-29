@@ -1,0 +1,13 @@
+h5py
+ipykernel
+jupyter
+keras
+librosa
+opencv-python
+python-speech-features
+seaborn
+soundfile
+imutils
+jiwer
+knockknock
+tf-seq2seq-losses
