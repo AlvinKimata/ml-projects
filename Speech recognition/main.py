@@ -18,6 +18,7 @@ from tensorflow.keras import mixed_precision
 mixed_precision.set_global_policy('mixed_float16')
 
 
+
 # The set of characters accepted in the transcription.
 characters = [x for x in "abcdefghijklmnopqrstuvwxyz'?! "]
 # Mapping characters to integers
@@ -165,4 +166,18 @@ model = build_model(
     )
 
 
-model.fit(train_dataset, epochs = 2, verbose = 1)
+# model.fit(train_dataset, epochs = 2, verbose = 1)
+
+for element in train_dataset.take(1):
+    spec, transcription = element
+
+    print(f"Spec shape is: {spec.shape}")
+    print(f"Transcription shape is: {transcription.shape}")
+
+grads = model(spec, training = False)
+
+loss_ = ctc_loss(y_true = transcription, y_pred = grads)
+print(f"Loss shape is: {loss_.shape}")
+print(loss_)
+
+print(f"Grads shape is: {grads.shape}")
