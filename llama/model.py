@@ -22,3 +22,19 @@ class ModelArgs:
 
     device: str = None
 
+class Transformer(nn.Module):
+	def __init(self, args = ModelArgs):
+		super().__init__()
+		assert args.vocab_size != 1, "Vocabulary size must be set."
+		self.args = args
+		self.vocab_size = args.vocab_size
+		self.n_layers = args.n_layers
+		self.tok_embeddings = nn.Embedding(self.vocab_size, args.dim)
+		self.layers = nn.ModuleList()
+
+		for _ in args.n_layers:
+			self.layers.append(EncoderBlock(args))
+
+		self.norm = RMSNorm(args.dim, eps = args.norm_eps)
+		self.output = nn.Linear(args.dim, self.vocab_size, bias = False)
+		
