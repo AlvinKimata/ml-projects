@@ -50,7 +50,66 @@ class RMSNorm(nn.Module):
 	
 	def forward(self, x: torch.Tensor):
 		return self.weight * self._norm(x.float()).type_as(x)
-	
+
+class SelfAttention(nn.Module):
+	def __init__(self, args: ModelArgs):
+		super().__init__()
+
+		#Number of heads for keys and values.
+		self.n_kv_heads = args.n_heads if args.n_kv_heads is None else args.n_kv_heads
+
+		#Number of heads for queries.
+		self.n_heads_q = args.n_heads
+		self.n_rep = self.n_heads_q // self.n_kv_heads
+		self.head_dim = args.dim // args.h_heads
+
+		self.wq = nn.Linear(args.dim, args.n_heads * self.head_dim, bias = False)
+		self.wk = nn.Linear(args.dim, args.n_kv_heads * self.head_dim, bias = False)
+		self.wv = nn.Linear(args.dim, args.n_kv_heads * self.head_dim, bias = False)
+		self.wo = nn.Linear(args.n_heads * self.head_dim, args.dim, bias = False)
+
+		self.cache_k = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
+		args.cache_v = torch.zeros((args.max_batch_size, args.max_seq_len, self.n_kv_heads, self.head_dim))
+
+	def forward(self, x: torch.Tensor, start_pos: int, freq_complex: torch.Tensor):
+		batch_size, seq_len, _ = x.shape #(B, 1, Dim)
+
+		#Apply linear projections.
+		xq = self.wq(x)
+		xk = self.wk(x)
+		xv = self.wv(x)
+
+		xq = xq.view(batch_size, seq_len, self.n_heads_q, self.head_dim)
+		xk = xk.view(batch_size, seq_len, self.n_kv_heads, self.head_dim)
+		xv = xv.view(batch_size, self.n_kv_heads, self.head_dim)
+
+		
+
+
+
+
+class EncoderBlock(nn.Module):
+	def __init__(self , args: ModelArgs):
+		super().__init__()
+
+		self.n_heads = args.n_heads
+		self.dim = args.dim
+		self.head_dim = args.dim // args.h_heads
+
+		self.attention = SelfAttention(args)
+		self.feed_forward = FeedForward(args)
+
+		#Normalization before the self attention.
+		self.attention_norm = RMSNorm(args.dim, eps = args.norm_eps)
+		
+		#Normalization before the feed-forward block.
+		self.ffn_norm = RMSNorm(args.dim, eps = args.norm_eps)
+
+	def forward(self, x: torch.Tensor, start_pos: int, freqs_complex: torch.Tensor):
+		h = x + self.attention.forward(self.attention_norm(x), start_pos, freqs_complex)
+		out = h + self.feed_forward.forward(self.ffn_norm(h))
+
+		return out
 
 		
 class Transformer(nn.Module):
